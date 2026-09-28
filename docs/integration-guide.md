@@ -12,18 +12,27 @@ what overlaps.
 
 ## 2. Create API keys per system
 
-```jsonc
-"Auth": {
-  "ApiKeys": [
-    { "Name": "back-office", "Key": "<random>", "Organization": "acme-retail", "Roles": ["admin"] },
-    { "Name": "pos",         "Key": "<random>", "Organization": "acme-retail", "Roles": ["channel"] },
-    { "Name": "web-shop",    "Key": "<random>", "Organization": "acme-retail", "Roles": ["channel"] }
-  ]
-}
+Keys belong to your organization and are created in the web app (Integrations → API keys) or through
+the API with an admin key:
+
+```http
+POST /api/v1/api-keys
+{ "name": "pos-istanbul", "scopes": ["channel"] }
+
+→ 201 { "id": "…", "name": "pos-istanbul", "prefix": "qxc_Ab3dE7Hk", "scopes": ["channel"], "key": "qxc_…" }
 ```
 
-Set them through environment variables in production (`Auth__ApiKeys__0__Key=...`). The `Name` is
-recorded on every redemption so you can see which system sold what.
+The `key` is shown **only once**; the platform stores a SHA-256 hash. Use one key per system so the
+`name` recorded on every redemption tells you which system sold what, and so a leaked key can be
+revoked (`POST /api/v1/api-keys/{id}/revoke`) without touching the others.
+
+| Scope | Allows |
+|---|---|
+| `channel` | evaluate, redeem, reverse, offline import, snapshot |
+| `admin` | everything under management: campaigns, product lists, webhooks, API keys |
+
+For local development and demos, organizations and keys can be seeded from configuration (`Seed`
+section; see `appsettings.Development.json`).
 
 ## 3. Channel flow (POS, web shop, mobile app)
 

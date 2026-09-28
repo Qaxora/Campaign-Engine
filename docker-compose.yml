@@ -10,14 +10,14 @@ services:
     environment:
       Database__Provider: PostgreSql
       Database__ConnectionString: "Host=db;Database=campaigns;Username=campaigns;Password=campaigns"
-      Auth__ApiKeys__0__Name: back-office
-      Auth__ApiKeys__0__Key: local-admin-key
-      Auth__ApiKeys__0__Organization: local-retail
-      Auth__ApiKeys__0__Roles__0: admin
-      Auth__ApiKeys__1__Name: pos
-      Auth__ApiKeys__1__Key: local-pos-key
-      Auth__ApiKeys__1__Organization: local-retail
-      Auth__ApiKeys__1__Roles__0: channel
+      Seed__Organizations__0__Slug: local-retail
+      Seed__Organizations__0__Name: Local Retail
+      Seed__Organizations__0__ApiKeys__0__Name: back-office
+      Seed__Organizations__0__ApiKeys__0__Key: local-admin-key
+      Seed__Organizations__0__ApiKeys__0__Scopes__0: admin
+      Seed__Organizations__0__ApiKeys__1__Name: pos
+      Seed__Organizations__0__ApiKeys__1__Key: local-pos-key
+      Seed__Organizations__0__ApiKeys__1__Scopes__0: channel
     depends_on:
       db:
         condition: service_healthy

@@ -14,6 +14,8 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
 {
     public DbSet<OrganizationRecord> Organizations => Set<OrganizationRecord>();
 
+    public DbSet<ApiKeyRecord> ApiKeys => Set<ApiKeyRecord>();
+
     public DbSet<CampaignRecord> Campaigns => Set<CampaignRecord>();
 
     public DbSet<ProductListRecord> ProductLists => Set<ProductListRecord>();
@@ -96,6 +98,17 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.Name).HasMaxLength(128);
             e.Property(x => x.Slug).HasMaxLength(64);
             e.HasIndex(x => x.Slug).IsUnique();
+        });
+
+        modelBuilder.Entity<ApiKeyRecord>(e =>
+        {
+            e.ToTable("api_keys");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(128);
+            e.Property(x => x.Prefix).HasMaxLength(16);
+            e.Property(x => x.KeyHash).HasMaxLength(64);
+            e.Property(x => x.Scopes).HasMaxLength(64);
+            e.HasIndex(x => x.KeyHash).IsUnique();
         });
 
         modelBuilder.Entity<CampaignRecord>(e =>

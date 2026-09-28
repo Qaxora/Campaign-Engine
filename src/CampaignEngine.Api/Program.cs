@@ -3,6 +3,7 @@ using CampaignEngine.Api.Http;
 using CampaignEngine.Api.Security;
 using CampaignEngine.Core.Serialization;
 using CampaignEngine.Infrastructure;
+using CampaignEngine.Infrastructure.Platform;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(o => CampaignJson.Configure(o.SerializerOptions));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ErrorHandler>();
-builder.Services.AddApiKeyAuthentication(builder.Configuration);
+builder.Services.AddApiKeyAuthentication();
 builder.Services.AddCampaignEngineInfrastructure(builder.Configuration);
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer<ApiDocument>());
 builder.Services.AddHealthChecks();
@@ -35,9 +36,10 @@ app.MapProductListEndpoints();
 app.MapChannelEndpoints();
 app.MapSnapshotEndpoints();
 app.MapWebhookEndpoints();
+app.MapApiKeyEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
-await app.Services.EnsureConfiguredOrganizationsAsync();
+await app.Services.SeedPlatformAsync();
 await app.RunAsync();
 
 /// <summary>Entry point, visible to integration tests.</summary>

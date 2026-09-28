@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(o => CampaignJson.Configure(o.SerializerOptions));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ErrorHandler>();
-builder.Services.AddApiKeyAuthentication();
+builder.Services.AddPlatformAuthentication();
 builder.Services.AddCampaignEngineInfrastructure(builder.Configuration);
 builder.Services.AddOpenApi(o => o.AddDocumentTransformer<ApiDocument>());
 builder.Services.AddHealthChecks();
@@ -37,6 +37,7 @@ app.MapChannelEndpoints();
 app.MapSnapshotEndpoints();
 app.MapWebhookEndpoints();
 app.MapApiKeyEndpoints();
+app.MapAccountEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.Services.SeedPlatformAsync();

@@ -16,6 +16,12 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
 
     public DbSet<ApiKeyRecord> ApiKeys => Set<ApiKeyRecord>();
 
+    public DbSet<UserRecord> Users => Set<UserRecord>();
+
+    public DbSet<MembershipRecord> Memberships => Set<MembershipRecord>();
+
+    public DbSet<SessionRecord> Sessions => Set<SessionRecord>();
+
     public DbSet<CampaignRecord> Campaigns => Set<CampaignRecord>();
 
     public DbSet<ProductListRecord> ProductLists => Set<ProductListRecord>();
@@ -98,6 +104,34 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.Name).HasMaxLength(128);
             e.Property(x => x.Slug).HasMaxLength(64);
             e.HasIndex(x => x.Slug).IsUnique();
+        });
+
+        modelBuilder.Entity<UserRecord>(e =>
+        {
+            e.ToTable("users");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Email).HasMaxLength(256);
+            e.Property(x => x.Name).HasMaxLength(128);
+            e.Property(x => x.PasswordHash).HasMaxLength(512);
+            e.HasIndex(x => x.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<MembershipRecord>(e =>
+        {
+            e.ToTable("memberships");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.TenantId, x.UserId }).IsUnique();
+            e.HasIndex(x => x.UserId);
+            e.HasOne<UserRecord>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SessionRecord>(e =>
+        {
+            e.ToTable("sessions");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.TokenHash).HasMaxLength(64);
+            e.HasIndex(x => x.TokenHash).IsUnique();
+            e.HasOne<UserRecord>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<ApiKeyRecord>(e =>

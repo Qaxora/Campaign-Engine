@@ -14,7 +14,7 @@ public static class CampaignEndpoints
     {
         var group = app.MapGroup("/api/v1/campaigns")
             .WithTags("Campaigns")
-            .RequireAuthorization(Policies.Admin);
+            .RequireAuthorization(Policies.Read);
 
         group.MapGet("/", async (
                 CampaignService service,
@@ -39,25 +39,30 @@ public static class CampaignEndpoints
                 var created = await service.CreateAsync(campaign, ct);
                 return Results.Created($"/api/v1/campaigns/{created.Id}", created);
             })
+            .RequireAuthorization(Policies.Manage)
             .WithSummary("Create a campaign (always as draft)")
             .Produces<Campaign>(StatusCodes.Status201Created);
 
         group.MapPut("/{id:guid}", async (Guid id, Campaign campaign, bool? force, CampaignService service, CancellationToken ct) =>
                 await service.UpdateAsync(id, campaign, campaign.Version, force ?? false, ct))
+            .RequireAuthorization(Policies.Manage)
             .WithSummary("Replace a campaign definition")
             .WithDescription("Send the `version` you loaded; a different stored version returns 409. Live campaigns are re-checked for conflicts.");
 
         group.MapPost("/{id:guid}/activate", async (Guid id, bool? force, CampaignService service, CancellationToken ct) =>
                 await service.ActivateAsync(id, force ?? false, ct))
+            .RequireAuthorization(Policies.Manage)
             .WithSummary("Activate a draft or paused campaign")
             .WithDescription("Returns the conflicts with other live campaigns. Error-level conflicts (e.g. duplicate coupon codes) block activation unless force=true.");
 
         group.MapPost("/{id:guid}/pause", async (Guid id, CampaignService service, CancellationToken ct) =>
                 await service.PauseAsync(id, ct))
+            .RequireAuthorization(Policies.Manage)
             .WithSummary("Pause an active campaign");
 
         group.MapPost("/{id:guid}/archive", async (Guid id, CampaignService service, CancellationToken ct) =>
                 await service.ArchiveAsync(id, ct))
+            .RequireAuthorization(Policies.Manage)
             .WithSummary("Archive a campaign (terminal)");
 
         group.MapDelete("/{id:guid}", async (Guid id, CampaignService service, CancellationToken ct) =>
@@ -65,6 +70,7 @@ public static class CampaignEndpoints
                 await service.DeleteAsync(id, ct);
                 return Results.NoContent();
             })
+            .RequireAuthorization(Policies.Manage)
             .WithSummary("Delete a draft campaign");
 
         group.MapPost("/validate", (Campaign campaign) =>

@@ -27,6 +27,12 @@ internal sealed class ApiDocument : IOpenApiDocumentTransformer
             Name = ApiKeyHandler.HeaderName,
             Description = "API key of the calling system.",
         };
+        document.Components.SecuritySchemes[SessionHandler.SchemeName] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            Description = "Session token from POST /api/v1/auth/login (web app users).",
+        };
         document.Security ??= [];
         document.Security.Add(new OpenApiSecurityRequirement
         {

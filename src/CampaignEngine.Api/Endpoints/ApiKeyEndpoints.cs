@@ -11,7 +11,7 @@ public static class ApiKeyEndpoints
     {
         var group = app.MapGroup("/api/v1/api-keys")
             .WithTags("API keys")
-            .RequireAuthorization(Policies.Admin);
+            .RequireAuthorization(Policies.Manage);
 
         group.MapGet("/", async (ApiKeyService service, CancellationToken ct) => await service.ListAsync(ct))
             .WithSummary("List the organization's API keys (secrets are never returned)");

@@ -11,7 +11,7 @@ public static class WebhookEndpoints
     {
         var group = app.MapGroup("/api/v1/webhooks")
             .WithTags("Webhooks")
-            .RequireAuthorization(Policies.Admin);
+            .RequireAuthorization(Policies.Manage);
 
         group.MapGet("/", async (WebhookService service, CancellationToken ct) => await service.ListAsync(ct))
             .WithSummary("List webhook subscriptions");

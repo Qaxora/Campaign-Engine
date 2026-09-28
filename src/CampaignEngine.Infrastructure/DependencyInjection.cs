@@ -44,6 +44,9 @@ public static class DependencyInjection
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
         services.AddScoped<OrganizationService>();
         services.AddScoped<ApiKeyService>();
+        services.AddScoped<IdentityService>();
+        services.AddScoped<MemberService>();
+        services.Configure<AccountOptions>(configuration.GetSection("Accounts"));
         services.Configure<SeedOptions>(configuration.GetSection("Seed"));
         services.AddSingleton(sp =>
         {

@@ -1,0 +1,4 @@
+* text=auto eol=lf
+*.pas text eol=crlf
+*.dpr text eol=crlf
+*.png binary

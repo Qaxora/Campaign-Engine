@@ -40,6 +40,7 @@ app.MapApiKeyEndpoints();
 app.MapAccountEndpoints();
 app.MapStoreEndpoints();
 app.MapProductEndpoints();
+app.MapLedgerEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.Services.SeedPlatformAsync();

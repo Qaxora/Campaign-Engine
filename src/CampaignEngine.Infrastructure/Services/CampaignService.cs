@@ -78,7 +78,7 @@ public sealed class CampaignService(
         record.Version = 1;
         record.CreatedAt = record.UpdatedAt = now.UtcDateTime;
         db.Campaigns.Add(record);
-        notifier.CampaignChanged(ChangeEvents.CampaignCreated, campaign);
+        await notifier.CampaignChangedAsync(ChangeEvents.CampaignCreated, campaign, cancellationToken);
         await SaveAsync(cancellationToken);
         return campaign;
     }
@@ -164,7 +164,7 @@ public sealed class CampaignService(
         }
 
         db.Campaigns.Remove(record);
-        notifier.CampaignChanged(ChangeEvents.CampaignDeleted, campaign);
+        await notifier.CampaignChangedAsync(ChangeEvents.CampaignDeleted, campaign, cancellationToken);
         await SaveAsync(cancellationToken);
     }
 
@@ -246,7 +246,7 @@ public sealed class CampaignService(
         record.Apply(campaign);
         record.Version = campaign.Version;
         record.UpdatedAt = now.UtcDateTime;
-        notifier.CampaignChanged(eventType, campaign);
+        await notifier.CampaignChangedAsync(eventType, campaign, cancellationToken);
         await SaveAsync(cancellationToken);
         return campaign;
     }

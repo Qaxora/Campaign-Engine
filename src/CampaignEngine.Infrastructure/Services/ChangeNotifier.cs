@@ -9,20 +9,16 @@ namespace CampaignEngine.Infrastructure.Services;
 /// </summary>
 public interface IChangeNotifier
 {
-    void CampaignChanged(string eventType, Campaign campaign);
+    Task CampaignChangedAsync(string eventType, Campaign campaign, CancellationToken cancellationToken);
 
-    void ProductListChanged(string eventType, ProductList list);
+    Task ProductListChangedAsync(string eventType, ProductList list, CancellationToken cancellationToken);
 }
 
 public sealed class NullChangeNotifier : IChangeNotifier
 {
-    public void CampaignChanged(string eventType, Campaign campaign)
-    {
-    }
+    public Task CampaignChangedAsync(string eventType, Campaign campaign, CancellationToken cancellationToken) => Task.CompletedTask;
 
-    public void ProductListChanged(string eventType, ProductList list)
-    {
-    }
+    public Task ProductListChangedAsync(string eventType, ProductList list, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
 public static class ChangeEvents
@@ -36,10 +32,11 @@ public static class ChangeEvents
     public const string ProductListCreated = "productList.created";
     public const string ProductListUpdated = "productList.updated";
     public const string ProductListDeleted = "productList.deleted";
+    public const string Ping = "ping";
 
     public static IReadOnlyList<string> All { get; } =
     [
         CampaignCreated, CampaignUpdated, CampaignActivated, CampaignPaused, CampaignArchived, CampaignDeleted,
-        ProductListCreated, ProductListUpdated, ProductListDeleted,
+        ProductListCreated, ProductListUpdated, ProductListDeleted, Ping,
     ];
 }

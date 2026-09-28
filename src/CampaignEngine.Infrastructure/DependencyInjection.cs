@@ -2,6 +2,7 @@ using CampaignEngine.Core.Conflicts;
 using CampaignEngine.Core.Evaluation;
 using CampaignEngine.Infrastructure.Persistence;
 using CampaignEngine.Infrastructure.Services;
+using CampaignEngine.Infrastructure.Webhooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,11 +47,18 @@ public static class DependencyInjection
         });
         services.AddSingleton(new ConflictAnalyzer());
         services.AddSingleton<CatalogProvider>();
-        services.TryAddScoped<IChangeNotifier, NullChangeNotifier>();
         services.AddScoped<CampaignService>();
         services.AddScoped<ProductListService>();
         services.AddScoped<EvaluationService>();
         services.AddScoped<RedemptionService>();
+
+        services.Configure<WebhookOptions>(configuration.GetSection("Webhooks"));
+        services.AddScoped<OutboxChangeNotifier>();
+        services.AddScoped<IChangeNotifier>(sp => sp.GetRequiredService<OutboxChangeNotifier>());
+        services.AddScoped<WebhookService>();
+        services.AddHttpClient(WebhookDispatcher.HttpClientName);
+        services.AddSingleton<WebhookDispatcher>();
+        services.AddHostedService(sp => sp.GetRequiredService<WebhookDispatcher>());
         return services;
     }
 

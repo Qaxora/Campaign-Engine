@@ -1,3 +1,4 @@
+using CampaignEngine.Infrastructure.Webhooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -16,6 +17,10 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
     public DbSet<RedemptionRecord> Redemptions => Set<RedemptionRecord>();
 
     public DbSet<CampaignUsageRecord> CampaignUsage => Set<CampaignUsageRecord>();
+
+    public DbSet<WebhookSubscriptionRecord> WebhookSubscriptions => Set<WebhookSubscriptionRecord>();
+
+    public DbSet<OutboxMessageRecord> OutboxMessages => Set<OutboxMessageRecord>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -88,6 +93,27 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.ToTable("campaign_usage");
             e.HasKey(x => x.CampaignId);
             e.Property(x => x.ConcurrencyStamp).IsConcurrencyToken();
+        });
+
+        modelBuilder.Entity<WebhookSubscriptionRecord>(e =>
+        {
+            e.ToTable("webhook_subscriptions");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Url).HasMaxLength(2048);
+            e.Property(x => x.Secret).HasMaxLength(256);
+            e.Property(x => x.Events).HasMaxLength(1024);
+            e.Property(x => x.Description).HasMaxLength(256);
+        });
+
+        modelBuilder.Entity<OutboxMessageRecord>(e =>
+        {
+            e.ToTable("outbox_messages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.EventType).HasMaxLength(64);
+            e.Property(x => x.LastError).HasMaxLength(1024);
+            e.HasIndex(x => new { x.DeliveredAt, x.Failed, x.NextAttemptAt });
+            e.HasIndex(x => new { x.SubscriptionId, x.CreatedAt });
+            e.HasOne<WebhookSubscriptionRecord>().WithMany().HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 

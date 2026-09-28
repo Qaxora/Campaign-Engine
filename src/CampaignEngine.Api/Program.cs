@@ -33,6 +33,7 @@ app.MapCampaignEndpoints();
 app.MapProductListEndpoints();
 app.MapChannelEndpoints();
 app.MapSnapshotEndpoints();
+app.MapWebhookEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.RunAsync();

@@ -116,7 +116,7 @@ public sealed class ProductListService(CampaignDbContext db, CatalogProvider cat
 
         var list = record.ToDomain(includeSkus: false);
         db.ProductLists.Remove(record);
-        notifier.ProductListChanged(ChangeEvents.ProductListDeleted, list);
+        await notifier.ProductListChangedAsync(ChangeEvents.ProductListDeleted, list, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         catalog.Invalidate();
     }
@@ -135,7 +135,7 @@ public sealed class ProductListService(CampaignDbContext db, CatalogProvider cat
         }
 
         var list = record.ToDomain();
-        notifier.ProductListChanged(eventType, list);
+        await notifier.ProductListChangedAsync(eventType, list, cancellationToken);
         try
         {
             await db.SaveChangesAsync(cancellationToken);

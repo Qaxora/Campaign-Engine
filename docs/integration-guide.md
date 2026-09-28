@@ -97,7 +97,8 @@ their checkout customization layer, or receive campaigns as fixed prices exporte
 * Maintain product lists from ERP exports: `PUT /product-lists/{code}/skus/import` with a CSV.
   Typical lists: `REGULATED` (kind `globalExclusion`), per-season assortments, brand exclusions.
 * Put the ERP campaign number in `metadata`; it is copied into every evaluation result.
-* Accounting can read the ledger (`transactions`, `redemptions` tables) or subscribe to
+* Accounting reads the ledger through `GET /api/v1/ledger/transactions` (filters: date range, status,
+  channel, store, customer, campaign), `/ledger/transactions/{id}` and `/ledger/usage/campaigns`, or subscribes to
   webhooks. Budget consumption per campaign is in `campaign_usage`.
 
 ## 7. Operations

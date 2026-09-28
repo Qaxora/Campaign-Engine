@@ -5,6 +5,7 @@
     <Project Path="src/CampaignEngine.Infrastructure/CampaignEngine.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/CampaignEngine.Api.Tests/CampaignEngine.Api.Tests.csproj" />
     <Project Path="tests/CampaignEngine.Core.Tests/CampaignEngine.Core.Tests.csproj" />
   </Folder>
 </Solution>

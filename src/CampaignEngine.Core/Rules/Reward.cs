@@ -29,5 +29,6 @@ public abstract class Reward
     /// Best-effort upper bound of the discount rate on a single product, used by conflict analysis
     /// to estimate how deep two stacked campaigns can go. Null when it cannot be estimated.
     /// </summary>
+    [JsonIgnore]
     public virtual decimal? MaxRateEstimate => null;
 }

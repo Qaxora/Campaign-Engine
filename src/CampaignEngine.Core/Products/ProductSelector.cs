@@ -31,9 +31,11 @@ public sealed class ProductSelector
 
     public List<string> ExcludeProductLists { get; set; } = [];
 
+    [JsonIgnore]
     public bool HasIncludeCriteria =>
         Skus.Count > 0 || Categories.Count > 0 || Brands.Count > 0 || ProductLists.Count > 0 || Attributes.Count > 0;
 
+    [JsonIgnore]
     public bool HasExcludeCriteria =>
         ExcludeSkus.Count > 0 || ExcludeCategories.Count > 0 || ExcludeBrands.Count > 0 || ExcludeProductLists.Count > 0;
 

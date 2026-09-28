@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CampaignEngine.Core.Products;
 
 namespace CampaignEngine.Core.Rules.Rewards;
@@ -124,6 +125,7 @@ public sealed class BuyXGetYReward : Reward
 
     public override IEnumerable<string> ReferencedProductLists() => GetProducts?.ReferencedProductLists() ?? [];
 
+    [JsonIgnore]
     public override decimal? MaxRateEstimate =>
         BuyQuantity > 0 ? DiscountPercent / 100m * GetQuantity / (BuyQuantity + GetQuantity) : null;
 }

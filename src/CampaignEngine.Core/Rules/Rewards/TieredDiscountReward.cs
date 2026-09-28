@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace CampaignEngine.Core.Rules.Rewards;
 
 /// <summary>
@@ -77,6 +79,7 @@ public sealed class TieredDiscountReward : Reward
         }
     }
 
+    [JsonIgnore]
     public override decimal? MaxRateEstimate =>
         Tiers.Count > 0 && Tiers.TrueForAll(t => t.Percent is not null) ? Tiers.Max(t => t.Percent!.Value) / 100m : null;
 }

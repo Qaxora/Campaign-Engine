@@ -77,6 +77,16 @@ public class SerializationTests
     }
 
     [Fact]
+    public void Computed_properties_are_not_part_of_the_contract()
+    {
+        var json = CampaignJson.Serialize(CampaignJson.Deserialize<Campaign>(HandWrittenCampaign));
+
+        Assert.DoesNotContain("hasIncludeCriteria", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("hasExcludeCriteria", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("maxRateEstimate", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Cart_accepts_prices_as_strings()
     {
         var cart = CampaignJson.Deserialize<Cart>("""

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace CampaignEngine.Core.Rules.Rewards;
 
 /// <summary>"20% off" the target products.</summary>
@@ -35,6 +37,7 @@ public sealed class PercentageDiscountReward : Reward
         }
     }
 
+    [JsonIgnore]
     public override decimal? MaxRateEstimate => Percent / 100m;
 }
 

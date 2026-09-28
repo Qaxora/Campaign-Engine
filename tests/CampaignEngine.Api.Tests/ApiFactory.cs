@@ -29,19 +29,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Database:ConnectionString", $"Data Source={_databasePath}");
         builder.UseSetting("Catalog:CacheSeconds", "0");
         builder.UseSetting("Webhooks:Enabled", "false"); // tests drive the dispatcher explicitly
-        builder.UseSetting("Auth:ApiKeys:0:Name", "back-office");
-        builder.UseSetting("Auth:ApiKeys:0:Key", AdminKey);
-        builder.UseSetting("Auth:ApiKeys:0:Organization", "tenant-a");
-        builder.UseSetting("Auth:ApiKeys:0:Roles:0", "admin");
-        builder.UseSetting("Auth:ApiKeys:1:Name", "pos-ist-001");
-        builder.UseSetting("Auth:ApiKeys:1:Key", PosKey);
-        builder.UseSetting("Auth:ApiKeys:1:Organization", "tenant-a");
-        builder.UseSetting("Auth:ApiKeys:1:Roles:0", "channel");
-        builder.UseSetting("Auth:ApiKeys:2:Name", "other-back-office");
-        builder.UseSetting("Auth:ApiKeys:2:Key", OtherAdminKey);
-        builder.UseSetting("Auth:ApiKeys:2:Organization", "tenant-b");
-        builder.UseSetting("Auth:ApiKeys:2:Roles:0", "admin");
-        builder.UseSetting("Auth:ApiKeys:2:Roles:1", "channel");
+        builder.UseSetting("Seed:Organizations:0:Slug", "tenant-a");
+        builder.UseSetting("Seed:Organizations:0:ApiKeys:0:Name", "back-office");
+        builder.UseSetting("Seed:Organizations:0:ApiKeys:0:Key", AdminKey);
+        builder.UseSetting("Seed:Organizations:0:ApiKeys:0:Scopes:0", "admin");
+        builder.UseSetting("Seed:Organizations:0:ApiKeys:1:Name", "pos-ist-001");
+        builder.UseSetting("Seed:Organizations:0:ApiKeys:1:Key", PosKey);
+        builder.UseSetting("Seed:Organizations:0:ApiKeys:1:Scopes:0", "channel");
+        builder.UseSetting("Seed:Organizations:1:Slug", "tenant-b");
+        builder.UseSetting("Seed:Organizations:1:ApiKeys:0:Name", "other-back-office");
+        builder.UseSetting("Seed:Organizations:1:ApiKeys:0:Key", OtherAdminKey);
+        builder.UseSetting("Seed:Organizations:1:ApiKeys:0:Scopes:0", "admin");
+        builder.UseSetting("Seed:Organizations:1:ApiKeys:0:Scopes:1", "channel");
 
         builder.ConfigureTestServices(services =>
             services.AddHttpClient(WebhookDispatcher.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Webhooks));

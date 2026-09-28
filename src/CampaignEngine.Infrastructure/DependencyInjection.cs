@@ -43,6 +43,8 @@ public static class DependencyInjection
         services.AddScoped<TenantContext>();
         services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
         services.AddScoped<OrganizationService>();
+        services.AddScoped<ApiKeyService>();
+        services.Configure<SeedOptions>(configuration.GetSection("Seed"));
         services.AddSingleton(sp =>
         {
             var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineOptions>>().Value;

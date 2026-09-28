@@ -1,6 +1,4 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 using CampaignEngine.Infrastructure.Platform;
 using Microsoft.AspNetCore.Authentication;
@@ -8,33 +6,13 @@ using Microsoft.Extensions.Options;
 
 namespace CampaignEngine.Api.Security;
 
-/// <summary>One calling system (POS, web shop, back office, …).</summary>
-public sealed class ApiClient
-{
-    /// <summary>Recorded in the redemption ledger, e.g. <c>pos-istanbul</c>, <c>akinon</c>.</summary>
-    public string Name { get; set; } = "";
-
-    public string Key { get; set; } = "";
-
-    /// <summary>Slug of the organization (tenant) the key belongs to.</summary>
-    public string Organization { get; set; } = "";
-
-    /// <summary><see cref="Roles.Admin"/> and/or <see cref="Roles.Channel"/>.</summary>
-    public List<string> Roles { get; set; } = [];
-}
-
-public sealed class AuthOptions
-{
-    public List<ApiClient> ApiKeys { get; set; } = [];
-}
-
 public static class Roles
 {
     /// <summary>Manage campaigns, product lists and webhooks.</summary>
-    public const string Admin = "admin";
+    public const string Admin = ApiKeyScopes.Admin;
 
     /// <summary>Evaluate carts, redeem, read the snapshot.</summary>
-    public const string Channel = "channel";
+    public const string Channel = ApiKeyScopes.Channel;
 }
 
 public static class Policies
@@ -47,15 +25,20 @@ public static class PlatformClaims
 {
     /// <summary>The organization the caller acts for.</summary>
     public const string TenantId = "tenant_id";
+
+    /// <summary><c>apiKey</c> or <c>user</c>.</summary>
+    public const string ActorType = "actor_type";
+
+    /// <summary>Id of the API key or user.</summary>
+    public const string ActorId = "actor_id";
 }
 
-/// <summary>Authenticates requests by the <c>X-Api-Key</c> header and binds them to the key's organization.</summary>
+/// <summary>Authenticates requests by the <c>X-Api-Key</c> header against the organization's stored keys.</summary>
 public sealed class ApiKeyHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IOptionsMonitor<AuthOptions> auth,
-    OrganizationService organizations)
+    ApiKeyService keys)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string SchemeName = "ApiKey";
@@ -68,39 +51,29 @@ public sealed class ApiKeyHandler(
             return AuthenticateResult.NoResult();
         }
 
-        var presented = Hash(values.ToString());
-        var client = auth.CurrentValue.ApiKeys.FirstOrDefault(c =>
-            !string.IsNullOrEmpty(c.Key) && CryptographicOperations.FixedTimeEquals(Hash(c.Key), presented));
-        if (client is null)
+        var identity = await keys.AuthenticateAsync(values.ToString(), Context.RequestAborted);
+        if (identity is null)
         {
-            return AuthenticateResult.Fail("Invalid API key.");
-        }
-
-        var organization = await organizations.FindBySlugAsync(client.Organization, Context.RequestAborted);
-        if (organization is null)
-        {
-            return AuthenticateResult.Fail("The API key is not bound to an existing organization.");
+            return AuthenticateResult.Fail("Invalid or revoked API key.");
         }
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, client.Name),
-            new(PlatformClaims.TenantId, organization.Id.ToString()),
+            new(ClaimTypes.Name, identity.Name),
+            new(PlatformClaims.TenantId, identity.TenantId.ToString()),
+            new(PlatformClaims.ActorType, "apiKey"),
+            new(PlatformClaims.ActorId, identity.KeyId.ToString()),
         };
-        claims.AddRange(client.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange(identity.Scopes.Select(scope => new Claim(ClaimTypes.Role, scope)));
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, SchemeName));
         return AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName));
     }
-
-    // Hashing first makes the comparison constant-time regardless of key length.
-    private static byte[] Hash(string value) => SHA256.HashData(Encoding.UTF8.GetBytes(value));
 }
 
 public static class ApiKeyExtensions
 {
-    public static IServiceCollection AddApiKeyAuthentication(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiKeyAuthentication(this IServiceCollection services)
     {
-        services.Configure<AuthOptions>(configuration.GetSection("Auth"));
         services.AddAuthentication(ApiKeyHandler.SchemeName)
             .AddScheme<AuthenticationSchemeOptions, ApiKeyHandler>(ApiKeyHandler.SchemeName, null);
         services.AddAuthorizationBuilder()
@@ -120,18 +93,6 @@ public static class ApiKeyExtensions
 
             await next(context);
         });
-
-    /// <summary>Creates the organizations referenced by configured API keys (bootstrap before DB-stored keys exist).</summary>
-    public static async Task EnsureConfiguredOrganizationsAsync(this IServiceProvider services)
-    {
-        await using var scope = services.CreateAsyncScope();
-        var options = scope.ServiceProvider.GetRequiredService<IOptions<AuthOptions>>().Value;
-        var organizations = scope.ServiceProvider.GetRequiredService<OrganizationService>();
-        foreach (var slug in options.ApiKeys.Select(k => k.Organization).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct())
-        {
-            await organizations.EnsureAsync(slug, slug);
-        }
-    }
 
     /// <summary>Name of the calling client, for the ledger.</summary>
     public static string ClientName(this ClaimsPrincipal user) => user.Identity?.Name ?? "unknown";

@@ -12,7 +12,7 @@
     <Authors>Emre Dal</Authors>
     <Product>Campaign Engine</Product>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/Qaxora/campaign</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Qaxora/Campaign-Engine</RepositoryUrl>
     <VersionPrefix>0.1.0</VersionPrefix>
   </PropertyGroup>
 </Project>

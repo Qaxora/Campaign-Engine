@@ -1,6 +1,6 @@
 # Campaign Engine
 
-[![CI](https://github.com/Qaxora/campaign/actions/workflows/ci.yml/badge.svg)](https://github.com/Qaxora/campaign/actions/workflows/ci.yml)
+[![CI](https://github.com/Qaxora/Campaign-Engine/actions/workflows/ci.yml/badge.svg)](https://github.com/Qaxora/Campaign-Engine/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A generic, channel-agnostic **campaign / promotion engine** for retail, written in .NET 10.
@@ -9,6 +9,11 @@ One engine, one rule model, every channel: the store POS, the web shop, the mobi
 office all ask the same service "what does this basket cost?" and get the same answer — with a
 line-by-line explanation. It speaks plain JSON over HTTP, so a Delphi POS, a Python service and a .NET
 back office integrate the same way.
+
+> **Qaxora Campaign** — the engine is becoming a multi-tenant SaaS platform (organizations, web app,
+> AI campaign assistant, ledger and analytics) at `campaign.qaxora.com`. See
+> [docs/saas-architecture.md](docs/saas-architecture.md) and the
+> [roadmap issue](https://github.com/Qaxora/Campaign-Engine/issues/29).
 
 ## Why
 
@@ -47,7 +52,7 @@ budgets, usage limits) in one place.
 ## Quick start
 
 ```bash
-git clone https://github.com/Qaxora/campaign.git && cd campaign
+git clone https://github.com/Qaxora/Campaign-Engine.git && cd Campaign-Engine
 dotnet run --project src/CampaignEngine.Api
 # → http://localhost:5080/docs   (keys: dev-admin-key / dev-pos-key)
 ```
@@ -93,6 +98,7 @@ e-commerce basket hooks and ERP product-list imports.
 * [Architecture](docs/architecture.md) — goals, components, evaluation algorithm, ledger, conflicts
 * [Rule reference](docs/rule-reference.md) — every field, condition and reward
 * [Integration guide](docs/integration-guide.md)
+* [SaaS architecture](docs/saas-architecture.md) — modules, tenancy, identities, AI boundary
 * [Architecture decisions](docs/adr)
 
 ## Project layout
@@ -111,11 +117,19 @@ samples/                         HTTP, Python, Delphi
 
 ## Roadmap
 
+SaaS platform (tracked in [#29](https://github.com/Qaxora/Campaign-Engine/issues/29)):
+
+1. Platform foundation — organizations, tenant isolation, API keys, users and roles, stores, catalog
+2. SaaS API — ledger queries, analytics, audit log
+3. Web application — dashboard, campaigns, builder, conflicts, catalog, sales, integrations, settings
+4. AI campaign assistant — Ollama-backed proposals with deterministic validation and human approval
+5. Production hardening — rate limiting, observability, security test matrix, migrations
+
+Engine backlog:
+
 * Partial returns with automatic re-pricing of the remaining items
-* Provider-specific EF Core migrations (the schema is currently created on start-up)
 * Coupon pools (generate / import thousands of single-use codes)
 * Loyalty-point rewards and "spend now, get a coupon for next time"
-* Admin UI
 * Message-broker adapters for the outbox (RabbitMQ, Kafka, Azure Service Bus)
 * Per-line tax information and tax-aware rounding
 

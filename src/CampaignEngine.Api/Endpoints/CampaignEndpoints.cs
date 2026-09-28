@@ -2,13 +2,14 @@ using CampaignEngine.Api.Http;
 using CampaignEngine.Api.Security;
 using CampaignEngine.Core.Campaigns;
 using CampaignEngine.Core.Conflicts;
+using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Services;
 
 namespace CampaignEngine.Api.Endpoints;
 
 public static class CampaignEndpoints
 {
-    public sealed record ValidationResponse(bool Valid, IReadOnlyList<string> Errors);
+    public sealed record ValidationResponse(bool Valid, IReadOnlyList<string> Errors, IReadOnlyList<string> Warnings);
 
     public static IEndpointRouteBuilder MapCampaignEndpoints(this IEndpointRouteBuilder app)
     {
@@ -73,10 +74,10 @@ public static class CampaignEndpoints
             .RequireAuthorization(Policies.Manage)
             .WithSummary("Delete a draft campaign");
 
-        group.MapPost("/validate", (Campaign campaign) =>
+        group.MapPost("/validate", async (Campaign campaign, StoreService stores, CancellationToken ct) =>
             {
                 var errors = CampaignValidator.Validate(campaign);
-                return new ValidationResponse(errors.Count == 0, errors);
+                return new ValidationResponse(errors.Count == 0, errors, await stores.UnknownStoreWarningsAsync(campaign, ct));
             })
             .WithSummary("Validate a definition without saving it");
 

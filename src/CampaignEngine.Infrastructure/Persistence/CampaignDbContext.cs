@@ -22,6 +22,8 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
 
     public DbSet<SessionRecord> Sessions => Set<SessionRecord>();
 
+    public DbSet<StoreRecord> Stores => Set<StoreRecord>();
+
     public DbSet<CampaignRecord> Campaigns => Set<CampaignRecord>();
 
     public DbSet<ProductListRecord> ProductLists => Set<ProductListRecord>();
@@ -132,6 +134,17 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.TokenHash).HasMaxLength(64);
             e.HasIndex(x => x.TokenHash).IsUnique();
             e.HasOne<UserRecord>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<StoreRecord>(e =>
+        {
+            e.ToTable("stores");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Code).HasMaxLength(64);
+            e.Property(x => x.Name).HasMaxLength(128);
+            e.Property(x => x.Channel).HasMaxLength(64);
+            e.Property(x => x.City).HasMaxLength(128);
+            e.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
         });
 
         modelBuilder.Entity<ApiKeyRecord>(e =>

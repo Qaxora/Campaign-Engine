@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<ApiKeyService>();
         services.AddScoped<IdentityService>();
         services.AddScoped<MemberService>();
+        services.AddScoped<StoreService>();
         services.Configure<AccountOptions>(configuration.GetSection("Accounts"));
         services.Configure<SeedOptions>(configuration.GetSection("Seed"));
         services.AddSingleton(sp =>

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CampaignEngine.Core.Evaluation;
+using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Services;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,9 @@ public sealed class ErrorHandler(IProblemDetailsService problems, ILogger<ErrorH
             ValidationException ex => Validation(ex.Errors),
             CartValidationException ex => Validation(ex.Errors),
             NotFoundException ex => Problem(StatusCodes.Status404NotFound, "Not found", ex.Message),
+            AuthenticationFailedException ex => Problem(StatusCodes.Status401Unauthorized, "Authentication failed", ex.Message),
+            ForbiddenException ex => Problem(StatusCodes.Status403Forbidden, "Forbidden", ex.Message),
+            TenantRequiredException ex => Problem(StatusCodes.Status403Forbidden, "No organization", ex.Message),
             ActivationBlockedException ex => WithConflicts(Problem(StatusCodes.Status409Conflict, "Conflicting campaigns", ex.Message), ex),
             ConflictException ex => Problem(StatusCodes.Status409Conflict, "Conflict", ex.Message),
             BadHttpRequestException { InnerException: JsonException json } => Problem(StatusCodes.Status400BadRequest, "Invalid JSON", json.Message),

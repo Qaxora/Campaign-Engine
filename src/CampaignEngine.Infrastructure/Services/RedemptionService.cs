@@ -110,7 +110,7 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
         var codes = sale.Campaigns.Select(c => c.CampaignCode.ToUpperInvariant()).Distinct().ToList();
         var known = await db.Campaigns.AsNoTracking()
             .Where(c => codes.Contains(c.Code.ToUpper()))
-            .ToDictionaryAsync(c => c.Code.ToUpperInvariant(), c => c.Id, cancellationToken);
+            .ToDictionaryAsync(c => c.Code.ToUpperInvariant(), c => (c.Id, c.Code), cancellationToken);
 
         var errors = sale.Campaigns
             .Where(c => !known.ContainsKey(c.CampaignCode.ToUpperInvariant()))
@@ -137,7 +137,11 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
             try
             {
                 var applied = sale.Campaigns
-                    .Select(c => new RedeemedCampaign(known[c.CampaignCode.ToUpperInvariant()], c.CampaignCode, c.Discount, c.CouponCode))
+                    .Select(c =>
+                    {
+                        var (id, code) = known[c.CampaignCode.ToUpperInvariant()];
+                        return new RedeemedCampaign(id, code, c.Discount, c.CouponCode);
+                    })
                     .ToList();
                 var transaction = NewTransaction(sale.TransactionId, client, offline: true, sale.CustomerId, sale.Channel, sale.StoreId,
                     sale.Currency, applied.Sum(a => a.Discount), CampaignJson.Serialize(sale), applied);

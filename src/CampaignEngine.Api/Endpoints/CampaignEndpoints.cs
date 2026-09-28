@@ -1,3 +1,4 @@
+using CampaignEngine.Api.Http;
 using CampaignEngine.Api.Security;
 using CampaignEngine.Core.Campaigns;
 using CampaignEngine.Core.Conflicts;
@@ -17,14 +18,14 @@ public static class CampaignEndpoints
 
         group.MapGet("/", async (
                 CampaignService service,
-                CampaignStatus? status,
+                string? status,
                 string? channel,
                 string? search,
                 string? tag,
                 int? page,
                 int? pageSize,
                 CancellationToken ct) =>
-            await service.ListAsync(new CampaignQuery(status, channel, search, tag, page ?? 1, pageSize ?? 50), ct))
+            await service.ListAsync(new CampaignQuery(QueryEnum.Parse<CampaignStatus>(status, "status"), channel, search, tag, page ?? 1, pageSize ?? 50), ct))
             .WithSummary("List campaigns")
             .WithDescription("Filters by status, channel (campaigns without channels match every channel), tag and a free-text search on code and name.");
 

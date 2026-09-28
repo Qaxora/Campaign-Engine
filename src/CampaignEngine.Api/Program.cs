@@ -30,6 +30,7 @@ app.MapHealthChecks("/health");
 app.MapGet("/", () => Results.Redirect("/docs")).ExcludeFromDescription();
 
 app.MapCampaignEndpoints();
+app.MapProductListEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.RunAsync();

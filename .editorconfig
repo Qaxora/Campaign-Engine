@@ -45,10 +45,16 @@ dotnet_naming_style.underscore_camel.capitalization = camel_case
 dotnet_diagnostic.CA1848.severity = none   # LoggerMessage delegates
 dotnet_diagnostic.CA1716.severity = none   # identifiers matching keywords (e.g. "Get")
 dotnet_diagnostic.CA1062.severity = none   # nullable reference types cover this
-dotnet_diagnostic.CA1305.severity = none   # IFormatProvider (InvariantGlobalization is on)
+dotnet_diagnostic.CA1305.severity = none   # IFormatProvider (user-facing text is English; invariant culture used where it matters)
 dotnet_diagnostic.CA1002.severity = none   # List<T> in public API of domain objects
 dotnet_diagnostic.CA2227.severity = none   # settable collections needed for JSON binding
 dotnet_diagnostic.CA1819.severity = none   # arrays as properties in DTOs
 dotnet_diagnostic.CA1515.severity = none   # public types in application projects
 dotnet_diagnostic.CA1707.severity = none   # underscores in test method names
 dotnet_diagnostic.CA1861.severity = none   # constant arrays as arguments
+
+[src/CampaignEngine.Infrastructure/**.cs]
+# ToUpper() inside EF Core queries is translated to SQL UPPER(); culture overloads are not translatable.
+dotnet_diagnostic.CA1304.severity = none
+dotnet_diagnostic.CA1311.severity = none
+dotnet_diagnostic.CA1862.severity = none

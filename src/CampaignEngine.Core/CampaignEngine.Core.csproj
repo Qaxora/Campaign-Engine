@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CampaignEngine.Core</RootNamespace>
+    <Description>Channel-agnostic retail campaign / promotion engine: rule model, evaluation and conflict analysis. No I/O, no dependencies.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CampaignEngine.Core.Tests" />
+  </ItemGroup>
+
+</Project>

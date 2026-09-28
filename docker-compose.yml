@@ -1,0 +1,38 @@
+# Campaign Engine with PostgreSQL.
+#   docker compose up --build
+#   open http://localhost:8080/docs
+# The API keys below are for local use only; set real ones through environment variables or secrets.
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      Database__Provider: PostgreSql
+      Database__ConnectionString: "Host=db;Database=campaigns;Username=campaigns;Password=campaigns"
+      Auth__ApiKeys__0__Name: back-office
+      Auth__ApiKeys__0__Key: local-admin-key
+      Auth__ApiKeys__0__Roles__0: admin
+      Auth__ApiKeys__1__Name: pos
+      Auth__ApiKeys__1__Key: local-pos-key
+      Auth__ApiKeys__1__Roles__0: channel
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: campaigns
+      POSTGRES_USER: campaigns
+      POSTGRES_PASSWORD: campaigns
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campaigns -d campaigns"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

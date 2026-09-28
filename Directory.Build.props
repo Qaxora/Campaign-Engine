@@ -7,7 +7,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Time zones (IANA ids) need ICU on Windows, so globalization stays on. -->
 
     <Authors>Emre Dal</Authors>
     <Product>Campaign Engine</Product>

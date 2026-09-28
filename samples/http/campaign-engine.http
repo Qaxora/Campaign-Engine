@@ -1,0 +1,122 @@
+### Campaign Engine — request collection
+### Works with the VS Code "REST Client" extension, JetBrains HTTP client and Visual Studio.
+### Start the API with `dotnet run --project src/CampaignEngine.Api` (Development keys below).
+
+@base = http://localhost:5080/api/v1
+@admin = dev-admin-key
+@pos = dev-pos-key
+
+### 1. A global "never discount" list (tobacco, gold, gift cards …)
+POST {{base}}/product-lists
+X-Api-Key: {{admin}}
+Content-Type: application/json
+
+{
+  "code": "REGULATED",
+  "name": "Products that may never be discounted",
+  "kind": "globalExclusion",
+  "skus": ["TOBACCO-001", "GOLD-22K-5G", "GIFTCARD-100"]
+}
+
+### 2. Bulk import SKUs from a CSV export of the ERP (first column = SKU)
+PUT {{base}}/product-lists/REGULATED/skus/import?mode=append
+X-Api-Key: {{admin}}
+Content-Type: text/csv
+
+sku,description
+TOBACCO-002,Cigarettes
+TOBACCO-003,Cigars
+
+### 3. "3 for 2 on t-shirts" in stores and online on weekends
+# @name create
+POST {{base}}/campaigns
+X-Api-Key: {{admin}}
+Content-Type: application/json
+
+{
+  "code": "SS26-TSHIRT-3X2",
+  "name": "T-shirts: 3 for 2",
+  "priority": 100,
+  "channels": ["store", "web"],
+  "schedule": {
+    "startsAt": "2026-06-01T00:00:00+03:00",
+    "endsAt": "2026-09-01T00:00:00+03:00",
+    "timeZone": "Europe/Istanbul",
+    "daysOfWeek": ["saturday", "sunday"]
+  },
+  "target": { "categories": ["apparel-tshirt"] },
+  "reward": { "type": "buyXGetY", "buyQuantity": 2, "getQuantity": 1 },
+  "limits": { "maxDiscountPerOrder": 1000 },
+  "displayMessage": "3 for 2 on all t-shirts",
+  "metadata": { "erpCampaignNo": "2026-0042" }
+}
+
+### 4. Check it against live campaigns before going live
+POST {{base}}/campaigns/conflicts
+X-Api-Key: {{admin}}
+Content-Type: application/json
+
+{
+  "code": "WEB-TSHIRT-40",
+  "name": "Web: 40% on t-shirts",
+  "channels": ["web"],
+  "target": { "categories": ["apparel-tshirt"] },
+  "reward": { "type": "percentageDiscount", "percent": 40 }
+}
+
+### 5. Activate (409 if an error-level conflict exists; add ?force=true to override)
+POST {{base}}/campaigns/{{create.response.body.id}}/activate
+X-Api-Key: {{admin}}
+
+### 6. Price a basket (POS / web). explain=true tells why other campaigns did not apply.
+POST {{base}}/evaluate?explain=true
+X-Api-Key: {{pos}}
+Content-Type: application/json
+
+{
+  "channel": "store",
+  "storeId": "IST-001",
+  "timestamp": "2026-06-06T11:00:00+03:00",
+  "customer": { "id": "C-1001", "segments": ["gold"] },
+  "lines": [
+    { "lineId": "1", "sku": "TS-001-M", "quantity": 2, "unitPrice": 299.90, "categories": ["apparel", "apparel-tshirt"] },
+    { "lineId": "2", "sku": "TS-002-L", "quantity": 1, "unitPrice": 199.90, "categories": ["apparel", "apparel-tshirt"] },
+    { "lineId": "3", "sku": "TOBACCO-001", "quantity": 1, "unitPrice": 95.00 }
+  ],
+  "payment": { "method": "creditCard", "cardBin": "45436012", "installments": 3 }
+}
+
+### 7. Confirm the sale (idempotent on transactionId)
+POST {{base}}/redemptions
+X-Api-Key: {{pos}}
+Content-Type: application/json
+
+{
+  "transactionId": "IST-001-20260606-000123",
+  "cart": {
+    "channel": "store",
+    "storeId": "IST-001",
+    "timestamp": "2026-06-06T11:00:00+03:00",
+    "lines": [
+      { "lineId": "1", "sku": "TS-001-M", "quantity": 3, "unitPrice": 299.90, "categories": ["apparel-tshirt"] }
+    ]
+  }
+}
+
+### 8. Customer returned everything
+POST {{base}}/redemptions/IST-001-20260606-000123/reverse
+X-Api-Key: {{pos}}
+Content-Type: application/json
+
+{ "reason": "full return" }
+
+### 9. Snapshot for local evaluation (repeat with If-None-Match: <ETag> → 304)
+GET {{base}}/snapshot
+X-Api-Key: {{pos}}
+
+### 10. Get notified about changes
+POST {{base}}/webhooks
+X-Api-Key: {{admin}}
+Content-Type: application/json
+
+{ "url": "https://pos-sync.example.com/campaign-hook", "events": ["campaign.*", "productList.*"] }

@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/CampaignEngine.Core/CampaignEngine.Core.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CampaignEngine.Core.Tests/CampaignEngine.Core.Tests.csproj" />
+  </Folder>
 </Solution>

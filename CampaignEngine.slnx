@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/CampaignEngine.Core/CampaignEngine.Core.csproj" />
+    <Project Path="src/CampaignEngine.Infrastructure/CampaignEngine.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CampaignEngine.Core.Tests/CampaignEngine.Core.Tests.csproj" />

@@ -23,8 +23,11 @@ public static class UsageReader
             return UsageSnapshot.Empty;
         }
 
+        // Tracked on purpose: when redeeming, these exact rows (and their concurrency stamps) are the
+        // ones updated afterwards, so a concurrent redemption between this read and the save makes the
+        // save fail and the limit check is repeated with fresh numbers.
         var ids = limited.Select(c => c.Id).ToList();
-        var totals = await db.CampaignUsage.AsNoTracking()
+        var totals = await db.CampaignUsage
             .Where(u => ids.Contains(u.CampaignId))
             .ToDictionaryAsync(u => u.CampaignId, cancellationToken);
 

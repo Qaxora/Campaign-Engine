@@ -94,8 +94,9 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
                 await SaveWithCountersAsync(transaction, applied, cancellationToken);
                 return ToResult(transaction, replayed: false);
             }
-            catch (DbUpdateException) when (attempt < MaxAttempts)
+            catch (DbUpdateException ex)
             {
+                ThrowIfExhausted(attempt, ex);
                 // A concurrent redemption changed a counter (limits must be re-checked) or recorded the
                 // same transaction id (the next loop returns it). Start over with fresh data.
                 db.ChangeTracker.Clear();
@@ -153,8 +154,9 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
                 await SaveWithCountersAsync(transaction, applied, cancellationToken);
                 return ToResult(transaction, replayed: false);
             }
-            catch (DbUpdateException) when (attempt < MaxAttempts)
+            catch (DbUpdateException ex)
             {
+                ThrowIfExhausted(attempt, ex);
                 db.ChangeTracker.Clear();
             }
         }
@@ -188,8 +190,9 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
                 await db.SaveChangesAsync(cancellationToken);
                 return ToResult(transaction, replayed: false);
             }
-            catch (DbUpdateException) when (attempt < MaxAttempts)
+            catch (DbUpdateException ex)
             {
+                ThrowIfExhausted(attempt, ex);
                 db.ChangeTracker.Clear();
             }
         }
@@ -280,6 +283,16 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
             .ToList(),
         Evaluation = transaction.Offline ? null : CampaignJson.Deserialize<EvaluationResult>(transaction.ResultJson),
     };
+
+    /// <summary>After <see cref="MaxAttempts"/> lost races the caller gets a 409 and can simply retry the same request.</summary>
+    private static void ThrowIfExhausted(int attempt, DbUpdateException ex)
+    {
+        if (attempt >= MaxAttempts)
+        {
+            throw new ConflictException(
+                $"The ledger is busy (concurrent redemptions of the same campaigns). Retry the request; it is idempotent. ({ex.InnerException?.Message ?? ex.Message})");
+        }
+    }
 
     private static void ValidateTransactionId(string transactionId)
     {

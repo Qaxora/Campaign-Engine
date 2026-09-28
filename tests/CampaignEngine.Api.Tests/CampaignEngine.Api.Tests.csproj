@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CampaignEngine.Api\CampaignEngine.Api.csproj" />
+    <ProjectReference Include="..\..\src\CampaignEngine.Client\CampaignEngine.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

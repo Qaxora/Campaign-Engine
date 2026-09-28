@@ -91,6 +91,9 @@ their checkout customization layer, or receive campaigns as fixed prices exporte
 
 ## 6. ERP and back-office
 
+* Keep the product catalog in sync: `PUT /api/v1/products/import` with a CSV (`sku,name,brand,categories,active`,
+  categories separated by `|`, extra columns become attributes). The catalog is reference data for the
+  web app and the AI assistant; carts still carry their own prices and categories.
 * Maintain product lists from ERP exports: `PUT /product-lists/{code}/skus/import` with a CSV.
   Typical lists: `REGULATED` (kind `globalExclusion`), per-season assortments, brand exclusions.
 * Put the ERP campaign number in `metadata`; it is copied into every evaluation result.

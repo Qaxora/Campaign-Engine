@@ -1,6 +1,7 @@
 using CampaignEngine.Core.Conflicts;
 using CampaignEngine.Core.Evaluation;
 using CampaignEngine.Infrastructure.Persistence;
+using CampaignEngine.Infrastructure.Catalog;
 using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Services;
 using CampaignEngine.Infrastructure.Webhooks;
@@ -47,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IdentityService>();
         services.AddScoped<MemberService>();
         services.AddScoped<StoreService>();
+        services.AddScoped<ProductService>();
         services.Configure<AccountOptions>(configuration.GetSection("Accounts"));
         services.Configure<SeedOptions>(configuration.GetSection("Seed"));
         services.AddSingleton(sp =>

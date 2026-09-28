@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using CampaignEngine.Infrastructure.Catalog;
 using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Webhooks;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,10 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
     public DbSet<SessionRecord> Sessions => Set<SessionRecord>();
 
     public DbSet<StoreRecord> Stores => Set<StoreRecord>();
+
+    public DbSet<ProductRecord> Products => Set<ProductRecord>();
+
+    public DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
 
     public DbSet<CampaignRecord> Campaigns => Set<CampaignRecord>();
 
@@ -134,6 +139,26 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.TokenHash).HasMaxLength(64);
             e.HasIndex(x => x.TokenHash).IsUnique();
             e.HasOne<UserRecord>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductRecord>(e =>
+        {
+            e.ToTable("products");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Sku).HasMaxLength(128);
+            e.Property(x => x.Name).HasMaxLength(256);
+            e.Property(x => x.Brand).HasMaxLength(128);
+            e.HasIndex(x => new { x.TenantId, x.Sku }).IsUnique();
+            e.HasIndex(x => new { x.TenantId, x.Brand });
+            e.HasMany(x => x.Categories).WithOne().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ProductCategoryRecord>(e =>
+        {
+            e.ToTable("product_categories");
+            e.HasKey(x => new { x.ProductId, x.Category });
+            e.Property(x => x.Category).HasMaxLength(128);
+            e.HasIndex(x => new { x.TenantId, x.Category });
         });
 
         modelBuilder.Entity<StoreRecord>(e =>

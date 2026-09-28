@@ -39,6 +39,7 @@ app.MapWebhookEndpoints();
 app.MapApiKeyEndpoints();
 app.MapAccountEndpoints();
 app.MapStoreEndpoints();
+app.MapProductEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.Services.SeedPlatformAsync();

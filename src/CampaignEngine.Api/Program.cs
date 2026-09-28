@@ -20,6 +20,7 @@ var app = builder.Build();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseAuthentication();
+app.UseTenantContext();
 app.UseAuthorization();
 
 app.MapOpenApi();
@@ -36,6 +37,7 @@ app.MapSnapshotEndpoints();
 app.MapWebhookEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
+await app.Services.EnsureConfiguredOrganizationsAsync();
 await app.RunAsync();
 
 /// <summary>Entry point, visible to integration tests.</summary>

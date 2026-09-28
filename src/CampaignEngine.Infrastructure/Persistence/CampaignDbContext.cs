@@ -1,11 +1,19 @@
+using System.Linq.Expressions;
+using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Webhooks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CampaignEngine.Infrastructure.Persistence;
 
-public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> options) : DbContext(options)
+/// <summary>
+/// The platform database. Every <see cref="ITenantOwned"/> entity is filtered to the current tenant
+/// and stamped with it on insert (ADR 0005); services never filter by tenant themselves.
+/// </summary>
+public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> options, ITenantContext tenant) : DbContext(options)
 {
+    public DbSet<OrganizationRecord> Organizations => Set<OrganizationRecord>();
+
     public DbSet<CampaignRecord> Campaigns => Set<CampaignRecord>();
 
     public DbSet<ProductListRecord> ProductLists => Set<ProductListRecord>();
@@ -22,6 +30,55 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
 
     public DbSet<OutboxMessageRecord> OutboxMessages => Set<OutboxMessageRecord>();
 
+    /// <summary>Read by the global query filters; EF Core re-evaluates it for every query of this instance.</summary>
+    private Guid? CurrentTenantId => tenant.TenantId;
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        EnforceTenant();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        EnforceTenant();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>Stamps new rows with the current tenant and refuses to touch rows of another tenant.</summary>
+    private void EnforceTenant()
+    {
+        foreach (var entry in ChangeTracker.Entries<ITenantOwned>())
+        {
+            if (entry.State is EntityState.Unchanged or EntityState.Detached)
+            {
+                continue;
+            }
+
+            if (tenant.IsSystem)
+            {
+                if (entry.State == EntityState.Added && entry.Entity.TenantId == Guid.Empty)
+                {
+                    throw new InvalidOperationException($"System code must set TenantId explicitly on new {entry.Metadata.ClrType.Name} rows.");
+                }
+
+                continue;
+            }
+
+            var current = tenant.TenantId ?? throw new TenantRequiredException();
+            if (entry.State == EntityState.Added && entry.Entity.TenantId == Guid.Empty)
+            {
+                entry.Entity.TenantId = current;
+            }
+
+            if (entry.Entity.TenantId != current)
+            {
+                throw new InvalidOperationException(
+                    $"Refusing to write a {entry.Metadata.ClrType.Name} row of another tenant.");
+            }
+        }
+    }
+
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         configurationBuilder.Properties<decimal>().HavePrecision(18, 4);
@@ -32,6 +89,15 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<OrganizationRecord>(e =>
+        {
+            e.ToTable("organizations");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(128);
+            e.Property(x => x.Slug).HasMaxLength(64);
+            e.HasIndex(x => x.Slug).IsUnique();
+        });
+
         modelBuilder.Entity<CampaignRecord>(e =>
         {
             e.ToTable("campaigns");
@@ -39,8 +105,8 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.Code).HasMaxLength(64);
             e.Property(x => x.Name).HasMaxLength(256);
             e.Property(x => x.Version).IsConcurrencyToken();
-            e.HasIndex(x => x.Code).IsUnique();
-            e.HasIndex(x => new { x.Status, x.EndsAt });
+            e.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
+            e.HasIndex(x => new { x.TenantId, x.Status, x.EndsAt });
         });
 
         modelBuilder.Entity<ProductListRecord>(e =>
@@ -50,7 +116,7 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.Code).HasMaxLength(64);
             e.Property(x => x.Name).HasMaxLength(256);
             e.Property(x => x.Version).IsConcurrencyToken();
-            e.HasIndex(x => x.Code).IsUnique();
+            e.HasIndex(x => new { x.TenantId, x.Code }).IsUnique();
             e.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.ListId).OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -64,15 +130,16 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
         modelBuilder.Entity<TransactionRecord>(e =>
         {
             e.ToTable("transactions");
-            e.HasKey(x => x.TransactionId);
+            e.HasKey(x => x.Id);
             e.Property(x => x.TransactionId).HasMaxLength(128);
             e.Property(x => x.Client).HasMaxLength(128);
             e.Property(x => x.CustomerId).HasMaxLength(128);
             e.Property(x => x.Channel).HasMaxLength(64);
             e.Property(x => x.StoreId).HasMaxLength(64);
             e.Property(x => x.Currency).HasMaxLength(3);
-            e.HasMany(x => x.Redemptions).WithOne().HasForeignKey(x => x.TransactionId).OnDelete(DeleteBehavior.Cascade);
-            e.HasIndex(x => x.CreatedAt);
+            e.HasMany(x => x.Redemptions).WithOne().HasForeignKey(x => x.TransactionRecordId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.TenantId, x.TransactionId }).IsUnique();
+            e.HasIndex(x => new { x.TenantId, x.CreatedAt });
         });
 
         modelBuilder.Entity<RedemptionRecord>(e =>
@@ -83,7 +150,7 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.CampaignCode).HasMaxLength(64);
             e.Property(x => x.CustomerId).HasMaxLength(128);
             e.Property(x => x.CouponCode).HasMaxLength(64);
-            e.HasIndex(x => new { x.TransactionId, x.CampaignId }).IsUnique();
+            e.HasIndex(x => new { x.TransactionRecordId, x.CampaignId }).IsUnique();
             e.HasIndex(x => new { x.CampaignId, x.CustomerId, x.Status });
             e.HasIndex(x => new { x.CampaignId, x.CouponCode, x.Status });
         });
@@ -103,6 +170,7 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.Secret).HasMaxLength(256);
             e.Property(x => x.Events).HasMaxLength(1024);
             e.Property(x => x.Description).HasMaxLength(256);
+            e.HasIndex(x => x.TenantId);
         });
 
         modelBuilder.Entity<OutboxMessageRecord>(e =>
@@ -115,6 +183,26 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.HasIndex(x => new { x.SubscriptionId, x.CreatedAt });
             e.HasOne<WebhookSubscriptionRecord>().WithMany().HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
         });
+
+        ApplyTenantFilters(modelBuilder);
+    }
+
+    /// <summary>Adds <c>TenantId == CurrentTenantId</c> to every tenant-owned entity, plus a foreign key to its organization.</summary>
+    private void ApplyTenantFilters(ModelBuilder modelBuilder)
+    {
+        foreach (var entity in modelBuilder.Model.GetEntityTypes().Where(t => typeof(ITenantOwned).IsAssignableFrom(t.ClrType)))
+        {
+            var parameter = Expression.Parameter(entity.ClrType, "e");
+            var filter = Expression.Lambda(
+                Expression.Equal(
+                    Expression.Convert(Expression.Property(parameter, nameof(ITenantOwned.TenantId)), typeof(Guid?)),
+                    Expression.Property(Expression.Constant(this), nameof(CurrentTenantId))),
+                parameter);
+            modelBuilder.Entity(entity.ClrType).HasQueryFilter(filter);
+            modelBuilder.Entity(entity.ClrType)
+                .HasOne(typeof(OrganizationRecord)).WithMany().HasForeignKey(nameof(ITenantOwned.TenantId))
+                .OnDelete(DeleteBehavior.Restrict);
+        }
     }
 
     /// <summary>SQLite forgets DateTime.Kind; everything in the database is UTC.</summary>

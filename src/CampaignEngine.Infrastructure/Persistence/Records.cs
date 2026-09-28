@@ -1,14 +1,17 @@
 using CampaignEngine.Core.Campaigns;
 using CampaignEngine.Core.Products;
+using CampaignEngine.Infrastructure.Platform;
 
 namespace CampaignEngine.Infrastructure.Persistence;
 
 // Persistence models. The domain model stays free of EF concerns; see ADR 0001 for why a campaign
-// is one row with a JSON definition.
+// is one row with a JSON definition and ADR 0005 for TenantId.
 
-public sealed class CampaignRecord
+public sealed class CampaignRecord : ITenantOwned
 {
     public Guid Id { get; set; }
+
+    public Guid TenantId { get; set; }
 
     public required string Code { get; set; }
 
@@ -32,9 +35,11 @@ public sealed class CampaignRecord
     public DateTime UpdatedAt { get; set; }
 }
 
-public sealed class ProductListRecord
+public sealed class ProductListRecord : ITenantOwned
 {
     public Guid Id { get; set; }
+
+    public Guid TenantId { get; set; }
 
     public required string Code { get; set; }
 
@@ -51,16 +56,23 @@ public sealed class ProductListRecord
     public List<ProductListItemRecord> Items { get; set; } = [];
 }
 
-public sealed class ProductListItemRecord
+public sealed class ProductListItemRecord : ITenantOwned
 {
     public Guid ListId { get; set; }
+
+    public Guid TenantId { get; set; }
 
     public required string Sku { get; set; }
 }
 
 /// <summary>One completed sale (or an imported offline sale) that used campaigns.</summary>
-public sealed class TransactionRecord
+public sealed class TransactionRecord : ITenantOwned
 {
+    public Guid Id { get; set; }
+
+    public Guid TenantId { get; set; }
+
+    /// <summary>The caller's receipt / order number; unique per tenant.</summary>
     public required string TransactionId { get; set; }
 
     public required string Client { get; set; }
@@ -92,10 +104,15 @@ public sealed class TransactionRecord
 }
 
 /// <summary>One campaign applied in one transaction.</summary>
-public sealed class RedemptionRecord
+public sealed class RedemptionRecord : ITenantOwned
 {
     public Guid Id { get; set; }
 
+    public Guid TenantId { get; set; }
+
+    public Guid TransactionRecordId { get; set; }
+
+    /// <summary>Copy of the caller's transaction id, for queries and display.</summary>
     public required string TransactionId { get; set; }
 
     public Guid CampaignId { get; set; }
@@ -115,9 +132,11 @@ public sealed class RedemptionRecord
 }
 
 /// <summary>Running totals per campaign. Doubles as the optimistic-concurrency guard for limits.</summary>
-public sealed class CampaignUsageRecord
+public sealed class CampaignUsageRecord : ITenantOwned
 {
     public Guid CampaignId { get; set; }
+
+    public Guid TenantId { get; set; }
 
     public int Redemptions { get; set; }
 

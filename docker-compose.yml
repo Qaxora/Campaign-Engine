@@ -12,9 +12,11 @@ services:
       Database__ConnectionString: "Host=db;Database=campaigns;Username=campaigns;Password=campaigns"
       Auth__ApiKeys__0__Name: back-office
       Auth__ApiKeys__0__Key: local-admin-key
+      Auth__ApiKeys__0__Organization: local-retail
       Auth__ApiKeys__0__Roles__0: admin
       Auth__ApiKeys__1__Name: pos
       Auth__ApiKeys__1__Key: local-pos-key
+      Auth__ApiKeys__1__Organization: local-retail
       Auth__ApiKeys__1__Roles__0: channel
     depends_on:
       db:

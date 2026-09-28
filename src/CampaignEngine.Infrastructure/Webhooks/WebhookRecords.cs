@@ -1,8 +1,12 @@
+using CampaignEngine.Infrastructure.Platform;
+
 namespace CampaignEngine.Infrastructure.Webhooks;
 
-public sealed class WebhookSubscriptionRecord
+public sealed class WebhookSubscriptionRecord : ITenantOwned
 {
     public Guid Id { get; set; }
+
+    public Guid TenantId { get; set; }
 
     public required string Url { get; set; }
 
@@ -20,9 +24,11 @@ public sealed class WebhookSubscriptionRecord
 }
 
 /// <summary>A notification waiting to be delivered to one subscription.</summary>
-public sealed class OutboxMessageRecord
+public sealed class OutboxMessageRecord : ITenantOwned
 {
     public Guid Id { get; set; }
+
+    public Guid TenantId { get; set; }
 
     public Guid SubscriptionId { get; set; }
 

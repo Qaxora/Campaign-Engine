@@ -2,6 +2,7 @@ using CampaignEngine.Core.Campaigns;
 using CampaignEngine.Core.Conflicts;
 using CampaignEngine.Core.Products;
 using CampaignEngine.Infrastructure.Persistence;
+using CampaignEngine.Infrastructure.Platform;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampaignEngine.Infrastructure.Services;
@@ -22,6 +23,7 @@ public sealed record CampaignChange(Campaign Campaign, IReadOnlyList<CampaignCon
 /// <summary>Campaign management: CRUD, lifecycle and conflict analysis.</summary>
 public sealed class CampaignService(
     CampaignDbContext db,
+    ITenantContext tenant,
     CatalogProvider catalog,
     ConflictAnalyzer analyzer,
     IChangeNotifier notifier,
@@ -171,14 +173,14 @@ public sealed class CampaignService(
     /// <summary>Conflicts of a (possibly unsaved) campaign against the live catalog.</summary>
     public async Task<IReadOnlyList<CampaignConflict>> AnalyzeAsync(Campaign candidate, CancellationToken cancellationToken = default)
     {
-        var data = await catalog.GetAsync(cancellationToken);
+        var data = await catalog.GetAsync(tenant.RequiredTenantId, cancellationToken);
         return analyzer.Analyze(candidate, data.Campaigns, await ListLookupAsync(candidate, data, cancellationToken));
     }
 
     /// <summary>All conflicts among live campaigns.</summary>
     public async Task<IReadOnlyList<CampaignConflict>> AnalyzeAllAsync(CancellationToken cancellationToken = default)
     {
-        var data = await catalog.GetAsync(cancellationToken);
+        var data = await catalog.GetAsync(tenant.RequiredTenantId, cancellationToken);
         return analyzer.AnalyzeAll(data.Campaigns, data.Snapshot.Lists);
     }
 
@@ -267,7 +269,7 @@ public sealed class CampaignService(
         }
         finally
         {
-            catalog.Invalidate();
+            catalog.Invalidate(tenant.RequiredTenantId);
         }
     }
 

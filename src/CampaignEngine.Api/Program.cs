@@ -1,3 +1,4 @@
+using CampaignEngine.Api.Endpoints;
 using CampaignEngine.Api.Http;
 using CampaignEngine.Api.Security;
 using CampaignEngine.Core.Serialization;
@@ -27,6 +28,8 @@ app.MapScalarApiReference("/docs", o => o
     .AddPreferredSecuritySchemes(ApiKeyHandler.SchemeName));
 app.MapHealthChecks("/health");
 app.MapGet("/", () => Results.Redirect("/docs")).ExcludeFromDescription();
+
+app.MapCampaignEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.RunAsync();

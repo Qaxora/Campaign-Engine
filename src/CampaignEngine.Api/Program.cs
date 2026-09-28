@@ -32,6 +32,7 @@ app.MapGet("/", () => Results.Redirect("/docs")).ExcludeFromDescription();
 app.MapCampaignEndpoints();
 app.MapProductListEndpoints();
 app.MapChannelEndpoints();
+app.MapSnapshotEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.RunAsync();

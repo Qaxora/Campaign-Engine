@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CampaignEngine.Core.Products;
 using CampaignEngine.Core.Rules;
 
@@ -63,6 +64,7 @@ public sealed class Campaign
     public List<string> Tags { get; set; } = [];
 
     /// <summary>Free-form references to other systems, e.g. <c>{"erpCampaignNo": "2026-0042"}</c>.</summary>
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)] // keep the case-insensitive comparer
     public Dictionary<string, string> Metadata { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Incremented on every change; used for optimistic concurrency.</summary>

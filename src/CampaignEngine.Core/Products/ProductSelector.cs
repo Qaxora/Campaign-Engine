@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CampaignEngine.Core.Carts;
 
 namespace CampaignEngine.Core.Products;
@@ -19,6 +20,7 @@ public sealed class ProductSelector
     public List<string> ProductLists { get; set; } = [];
 
     /// <summary>Attribute name → accepted values, e.g. <c>{"season": ["SS26"]}</c>.</summary>
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)] // keep the case-insensitive comparer
     public Dictionary<string, List<string>> Attributes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public List<string> ExcludeSkus { get; set; } = [];

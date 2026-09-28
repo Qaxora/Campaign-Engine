@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace CampaignEngine.Core.Products;
 
 /// <summary>
@@ -16,6 +18,7 @@ public sealed class ProductList
 
     public ProductListKind Kind { get; set; } = ProductListKind.Standard;
 
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)] // keep the case-insensitive comparer
     public HashSet<string> Skus { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public int Version { get; set; }

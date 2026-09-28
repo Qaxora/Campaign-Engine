@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace CampaignEngine.Core.Carts;
 
 /// <summary>
@@ -33,6 +35,7 @@ public sealed class Cart
     public decimal ShippingAmount { get; set; }
 
     /// <summary>Free-form key/values for <c>cartAttribute</c> conditions (e.g. <c>deliveryType=clickAndCollect</c>).</summary>
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)] // keep the case-insensitive comparer
     public Dictionary<string, string> Attributes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Returns human-readable problems; an empty list means the cart can be evaluated.</summary>
@@ -109,6 +112,7 @@ public sealed class CartLine
     /// </summary>
     public List<string> Categories { get; set; } = [];
 
+    [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)] // keep the case-insensitive comparer
     public Dictionary<string, string> Attributes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Price floor: no campaign may bring one unit below this price.</summary>

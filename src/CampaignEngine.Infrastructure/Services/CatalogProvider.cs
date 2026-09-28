@@ -1,9 +1,11 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using CampaignEngine.Core.Campaigns;
 using CampaignEngine.Core.Evaluation;
 using CampaignEngine.Core.Products;
 using CampaignEngine.Infrastructure.Persistence;
+using CampaignEngine.Infrastructure.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -26,63 +28,70 @@ public sealed class CatalogData
 }
 
 /// <summary>
-/// Caches the catalog in memory. Local writes invalidate it immediately; other instances pick up
-/// changes after <see cref="CatalogOptions.CacheSeconds"/>.
+/// Caches each tenant's catalog in memory. Local writes invalidate it immediately; other instances
+/// pick up changes after <see cref="CatalogOptions.CacheSeconds"/>.
 /// </summary>
 public sealed class CatalogProvider(IServiceScopeFactory scopes, IOptions<CatalogOptions> options, TimeProvider time) : IDisposable
 {
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private CatalogData? _current;
-    private long _generation;
+    private readonly ConcurrentDictionary<Guid, CatalogCacheEntry> _entries = new();
 
-    public async Task<CatalogData> GetAsync(CancellationToken cancellationToken = default)
+    public async Task<CatalogData> GetAsync(Guid tenantId, CancellationToken cancellationToken = default)
     {
-        var current = Volatile.Read(ref _current);
+        var entry = _entries.GetOrAdd(tenantId, _ => new CatalogCacheEntry());
+        var current = Volatile.Read(ref entry.Data);
         if (current is not null && !IsExpired(current))
         {
             return current;
         }
 
-        await _lock.WaitAsync(cancellationToken);
+        await entry.Lock.WaitAsync(cancellationToken);
         try
         {
-            current = _current;
+            current = entry.Data;
             if (current is not null && !IsExpired(current))
             {
                 return current;
             }
 
-            var generation = Interlocked.Read(ref _generation);
-            var loaded = await LoadAsync(cancellationToken);
+            var generation = Interlocked.Read(ref entry.Generation);
+            var loaded = await LoadAsync(tenantId, cancellationToken);
 
             // Do not cache a catalog that was invalidated while it was being loaded.
-            if (generation == Interlocked.Read(ref _generation))
+            if (generation == Interlocked.Read(ref entry.Generation))
             {
-                Volatile.Write(ref _current, loaded);
+                Volatile.Write(ref entry.Data, loaded);
             }
 
             return loaded;
         }
         finally
         {
-            _lock.Release();
+            entry.Lock.Release();
         }
     }
 
-    public void Invalidate()
+    public void Invalidate(Guid tenantId)
     {
-        Interlocked.Increment(ref _generation);
-        Volatile.Write(ref _current, null);
+        var entry = _entries.GetOrAdd(tenantId, _ => new CatalogCacheEntry());
+        Interlocked.Increment(ref entry.Generation);
+        Volatile.Write(ref entry.Data, null);
     }
 
-    public void Dispose() => _lock.Dispose();
+    public void Dispose()
+    {
+        foreach (var entry in _entries.Values)
+        {
+            entry.Dispose();
+        }
+    }
 
     private bool IsExpired(CatalogData data) =>
         time.GetUtcNow() - data.LoadedAt > TimeSpan.FromSeconds(options.Value.CacheSeconds);
 
-    private async Task<CatalogData> LoadAsync(CancellationToken cancellationToken)
+    private async Task<CatalogData> LoadAsync(Guid tenantId, CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantContext>().Set(tenantId);
         var db = scope.ServiceProvider.GetRequiredService<CampaignDbContext>();
         var now = time.GetUtcNow();
         var nowUtc = now.UtcDateTime;
@@ -127,6 +136,17 @@ public sealed class CatalogProvider(IServiceScopeFactory scopes, IOptions<Catalo
 
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())))[..16];
     }
+}
+
+internal sealed class CatalogCacheEntry : IDisposable
+{
+    public readonly SemaphoreSlim Lock = new(1, 1);
+#pragma warning disable CA1051 // fields are needed for Volatile / Interlocked
+    public CatalogData? Data;
+    public long Generation;
+#pragma warning restore CA1051
+
+    public void Dispose() => Lock.Dispose();
 }
 
 public sealed class CatalogOptions

@@ -14,6 +14,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 {
     public const string AdminKey = "test-admin-key";
     public const string PosKey = "test-pos-key";
+    public const string OtherAdminKey = "test-other-tenant-key";
 
     private readonly string _databasePath = Path.Combine(Path.GetTempPath(), $"campaign-tests-{Guid.NewGuid():N}.db");
 
@@ -30,10 +31,17 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Webhooks:Enabled", "false"); // tests drive the dispatcher explicitly
         builder.UseSetting("Auth:ApiKeys:0:Name", "back-office");
         builder.UseSetting("Auth:ApiKeys:0:Key", AdminKey);
+        builder.UseSetting("Auth:ApiKeys:0:Organization", "tenant-a");
         builder.UseSetting("Auth:ApiKeys:0:Roles:0", "admin");
         builder.UseSetting("Auth:ApiKeys:1:Name", "pos-ist-001");
         builder.UseSetting("Auth:ApiKeys:1:Key", PosKey);
+        builder.UseSetting("Auth:ApiKeys:1:Organization", "tenant-a");
         builder.UseSetting("Auth:ApiKeys:1:Roles:0", "channel");
+        builder.UseSetting("Auth:ApiKeys:2:Name", "other-back-office");
+        builder.UseSetting("Auth:ApiKeys:2:Key", OtherAdminKey);
+        builder.UseSetting("Auth:ApiKeys:2:Organization", "tenant-b");
+        builder.UseSetting("Auth:ApiKeys:2:Roles:0", "admin");
+        builder.UseSetting("Auth:ApiKeys:2:Roles:1", "channel");
 
         builder.ConfigureTestServices(services =>
             services.AddHttpClient(WebhookDispatcher.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => Webhooks));
@@ -42,6 +50,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public HttpClient Admin() => ClientWithKey(AdminKey);
 
     public HttpClient Pos() => ClientWithKey(PosKey);
+
+    /// <summary>Admin + channel key of a second organization, for isolation tests.</summary>
+    public HttpClient OtherTenant() => ClientWithKey(OtherAdminKey);
 
     private HttpClient ClientWithKey(string key)
     {

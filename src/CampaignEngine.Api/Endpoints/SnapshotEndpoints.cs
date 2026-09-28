@@ -1,5 +1,6 @@
 using CampaignEngine.Api.Security;
 using CampaignEngine.Core.Evaluation;
+using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Services;
 using Microsoft.Net.Http.Headers;
 
@@ -9,9 +10,9 @@ public static class SnapshotEndpoints
 {
     public static IEndpointRouteBuilder MapSnapshotEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/v1/snapshot", async (HttpContext http, CatalogProvider catalog, CancellationToken ct) =>
+        app.MapGet("/api/v1/snapshot", async (HttpContext http, CatalogProvider catalog, ITenantContext tenant, CancellationToken ct) =>
             {
-                var data = await catalog.GetAsync(ct);
+                var data = await catalog.GetAsync(tenant.RequiredTenantId, ct);
                 var etag = new EntityTagHeaderValue($"\"{data.Version}\"");
                 http.Response.Headers.ETag = etag.ToString();
                 http.Response.Headers.CacheControl = "no-cache";

@@ -1,6 +1,7 @@
 using CampaignEngine.Core.Conflicts;
 using CampaignEngine.Core.Evaluation;
 using CampaignEngine.Infrastructure.Persistence;
+using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Services;
 using CampaignEngine.Infrastructure.Webhooks;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,9 @@ public static class DependencyInjection
         });
 
         services.TryAddSingleton(TimeProvider.System);
+        services.AddScoped<TenantContext>();
+        services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
+        services.AddScoped<OrganizationService>();
         services.AddSingleton(sp =>
         {
             var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EngineOptions>>().Value;

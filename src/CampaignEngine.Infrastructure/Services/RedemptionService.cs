@@ -2,6 +2,7 @@ using CampaignEngine.Core.Carts;
 using CampaignEngine.Core.Evaluation;
 using CampaignEngine.Core.Serialization;
 using CampaignEngine.Infrastructure.Persistence;
+using CampaignEngine.Infrastructure.Platform;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampaignEngine.Infrastructure.Services;
@@ -62,7 +63,7 @@ public sealed class OfflineCampaign
 /// The redemption ledger. Confirms sales idempotently, enforces limits under concurrency and
 /// releases usage on reversal.
 /// </summary>
-public sealed class RedemptionService(CampaignDbContext db, CatalogProvider catalog, PromotionEvaluator evaluator, TimeProvider time)
+public sealed class RedemptionService(CampaignDbContext db, ITenantContext tenant, CatalogProvider catalog, PromotionEvaluator evaluator, TimeProvider time)
 {
     private const int MaxAttempts = 5;
 
@@ -82,7 +83,7 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
 
             try
             {
-                var data = await catalog.GetAsync(cancellationToken);
+                var data = await catalog.GetAsync(tenant.RequiredTenantId, cancellationToken);
                 var usage = await UsageReader.ReadAsync(db, data.Campaigns, cart, cancellationToken);
                 var result = evaluator.Evaluate(cart, data.Snapshot, usage);
                 var applied = result.AppliedCampaigns
@@ -212,6 +213,7 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
         var now = time.GetUtcNow().UtcDateTime;
         var transaction = new TransactionRecord
         {
+            Id = Guid.NewGuid(),
             TransactionId = transactionId,
             Client = client,
             Status = RedemptionStatus.Confirmed,
@@ -227,6 +229,7 @@ public sealed class RedemptionService(CampaignDbContext db, CatalogProvider cata
         transaction.Redemptions.AddRange(applied.Select(a => new RedemptionRecord
         {
             Id = Guid.NewGuid(),
+            TransactionRecordId = transaction.Id,
             TransactionId = transactionId,
             CampaignId = a.CampaignId,
             CampaignCode = a.CampaignCode,

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using CampaignEngine.Infrastructure.Persistence;
+using CampaignEngine.Infrastructure.Platform;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -61,10 +62,12 @@ public sealed class WebhookDispatcher(
     public async Task<int> DispatchBatchAsync(CancellationToken cancellationToken)
     {
         await using var scope = scopes.CreateAsyncScope();
+        // Delivery works across tenants: the one deliberate exception to tenant filtering (ADR 0005).
+        scope.ServiceProvider.GetRequiredService<TenantContext>().RunAsSystem();
         var db = scope.ServiceProvider.GetRequiredService<CampaignDbContext>();
         var now = time.GetUtcNow().UtcDateTime;
 
-        var due = await db.OutboxMessages
+        var due = await db.OutboxMessages.IgnoreQueryFilters()
             .Where(m => m.DeliveredAt == null && !m.Failed && m.NextAttemptAt <= now)
             .OrderBy(m => m.CreatedAt)
             .Take(options.Value.BatchSize)
@@ -75,7 +78,7 @@ public sealed class WebhookDispatcher(
         }
 
         var subscriptionIds = due.Select(m => m.SubscriptionId).Distinct().ToList();
-        var subscriptions = await db.WebhookSubscriptions.AsNoTracking()
+        var subscriptions = await db.WebhookSubscriptions.IgnoreQueryFilters().AsNoTracking()
             .Where(s => subscriptionIds.Contains(s.Id))
             .ToDictionaryAsync(s => s.Id, cancellationToken);
 

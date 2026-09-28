@@ -15,9 +15,9 @@ what overlaps.
 ```jsonc
 "Auth": {
   "ApiKeys": [
-    { "Name": "back-office", "Key": "<random>", "Roles": ["admin"] },
-    { "Name": "pos",         "Key": "<random>", "Roles": ["channel"] },
-    { "Name": "web-shop",    "Key": "<random>", "Roles": ["channel"] }
+    { "Name": "back-office", "Key": "<random>", "Organization": "acme-retail", "Roles": ["admin"] },
+    { "Name": "pos",         "Key": "<random>", "Organization": "acme-retail", "Roles": ["channel"] },
+    { "Name": "web-shop",    "Key": "<random>", "Organization": "acme-retail", "Roles": ["channel"] }
   ]
 }
 ```

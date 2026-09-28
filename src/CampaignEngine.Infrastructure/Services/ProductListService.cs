@@ -1,6 +1,7 @@
 using CampaignEngine.Core.Campaigns;
 using CampaignEngine.Core.Products;
 using CampaignEngine.Infrastructure.Persistence;
+using CampaignEngine.Infrastructure.Platform;
 using Microsoft.EntityFrameworkCore;
 
 namespace CampaignEngine.Infrastructure.Services;
@@ -12,7 +13,7 @@ public sealed record ProductListSummary(
 /// Product lists replace the "INSERT INTO campaign_products …" scripts: include lists, exclude lists
 /// and global never-discount lists are all maintained here.
 /// </summary>
-public sealed class ProductListService(CampaignDbContext db, CatalogProvider catalog, IChangeNotifier notifier, TimeProvider time)
+public sealed class ProductListService(CampaignDbContext db, ITenantContext tenant, CatalogProvider catalog, IChangeNotifier notifier, TimeProvider time)
 {
     public const int MaxSkusPerRequest = 100_000;
 
@@ -118,7 +119,7 @@ public sealed class ProductListService(CampaignDbContext db, CatalogProvider cat
         db.ProductLists.Remove(record);
         await notifier.ProductListChangedAsync(ChangeEvents.ProductListDeleted, list, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
-        catalog.Invalidate();
+        catalog.Invalidate(tenant.RequiredTenantId);
     }
 
     private async Task<ProductListRecord> LoadAsync(string code, CancellationToken cancellationToken) =>
@@ -146,7 +147,7 @@ public sealed class ProductListService(CampaignDbContext db, CatalogProvider cat
         }
         finally
         {
-            catalog.Invalidate();
+            catalog.Invalidate(tenant.RequiredTenantId);
         }
 
         return list;

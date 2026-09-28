@@ -42,6 +42,8 @@ section; see `appsettings.Development.json`).
  void / return  ──► POST /redemptions/{id}/reverse
 ```
 
+* Register your stores (`POST /api/v1/stores`) and send their code as `storeId`; campaigns that
+  mention unregistered store codes get a warning when validated or activated.
 * Build the cart from the channel's data: `lineId`, `sku`, `quantity`, `unitPrice`, `categories`
   (full path), `brand`, `attributes`, `minimumUnitPrice`, `discountable`.
 * Show `appliedCampaigns[].displayMessage` and `hints` ("add 40 TRY for free shipping").

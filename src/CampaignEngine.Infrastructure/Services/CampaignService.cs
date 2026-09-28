@@ -18,7 +18,8 @@ public sealed record CampaignQuery(
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
 /// <summary>A campaign after a change, with the conflicts it has with other live campaigns.</summary>
-public sealed record CampaignChange(Campaign Campaign, IReadOnlyList<CampaignConflict> Conflicts);
+/// <param name="Warnings">Non-blocking remarks, e.g. store codes that are not registered.</param>
+public sealed record CampaignChange(Campaign Campaign, IReadOnlyList<CampaignConflict> Conflicts, IReadOnlyList<string> Warnings);
 
 /// <summary>Campaign management: CRUD, lifecycle and conflict analysis.</summary>
 public sealed class CampaignService(
@@ -26,6 +27,7 @@ public sealed class CampaignService(
     ITenantContext tenant,
     CatalogProvider catalog,
     ConflictAnalyzer analyzer,
+    StoreService stores,
     IChangeNotifier notifier,
     TimeProvider time)
 {
@@ -115,7 +117,8 @@ public sealed class CampaignService(
             ? await CheckConflictsAsync(campaign, force, cancellationToken)
             : [];
 
-        return new CampaignChange(await SaveDefinitionAsync(record, campaign, ChangeEvents.CampaignUpdated, cancellationToken), conflicts);
+        var saved = await SaveDefinitionAsync(record, campaign, ChangeEvents.CampaignUpdated, cancellationToken);
+        return new CampaignChange(saved, conflicts, await stores.UnknownStoreWarningsAsync(saved, cancellationToken));
     }
 
     /// <summary>Makes a draft or paused campaign live. Refused on error-level conflicts unless forced.</summary>
@@ -129,7 +132,8 @@ public sealed class CampaignService(
 
         var conflicts = await CheckConflictsAsync(campaign, force, cancellationToken);
         campaign.Status = CampaignStatus.Active;
-        return new CampaignChange(await SaveDefinitionAsync(record, campaign, ChangeEvents.CampaignActivated, cancellationToken), conflicts);
+        var activated = await SaveDefinitionAsync(record, campaign, ChangeEvents.CampaignActivated, cancellationToken);
+        return new CampaignChange(activated, conflicts, await stores.UnknownStoreWarningsAsync(activated, cancellationToken));
     }
 
     public async Task<Campaign> PauseAsync(Guid id, CancellationToken cancellationToken = default)

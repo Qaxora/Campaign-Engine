@@ -70,7 +70,7 @@ public sealed class OfflineSaleCampaign
     public string? CouponCode { get; set; }
 }
 
-public sealed record CampaignChangeResponse(Campaign Campaign, IReadOnlyList<CampaignConflict> Conflicts);
+public sealed record CampaignChangeResponse(Campaign Campaign, IReadOnlyList<CampaignConflict> Conflicts, IReadOnlyList<string>? Warnings = null);
 
 public sealed record PagedResponse<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 

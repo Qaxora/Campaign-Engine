@@ -57,6 +57,12 @@ dotnet run --project src/CampaignEngine.Api
 # → http://localhost:5080/docs   (keys: dev-admin-key / dev-pos-key)
 ```
 
+The web console (Next.js, `web/`) runs next to it:
+
+```bash
+cd web && cp .env.example .env.local && pnpm install && pnpm dev   # → http://localhost:3000
+```
+
 or with Docker and PostgreSQL:
 
 ```bash
@@ -113,6 +119,7 @@ tests/
   CampaignEngine.Core.Tests      engine unit tests
   CampaignEngine.Api.Tests       end-to-end tests against the real API
 samples/                         HTTP, Python, Delphi
+web/                             Next.js SaaS console (campaign.qaxora.com)
 ```
 
 ## Roadmap

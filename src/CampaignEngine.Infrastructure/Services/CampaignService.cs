@@ -239,6 +239,13 @@ public sealed class CampaignService(
         return analyzer.AnalyzeAll(data.Campaigns, data.Snapshot.Lists);
     }
 
+    /// <summary>All conflicts among live campaigns, each with both campaigns described.</summary>
+    public async Task<ConflictReport> ConflictReportAsync(CancellationToken cancellationToken = default)
+    {
+        var data = await catalog.GetAsync(tenant.RequiredTenantId, cancellationToken);
+        return ConflictReportBuilder.Build(data.Campaigns, analyzer.AnalyzeAll(data.Campaigns, data.Snapshot.Lists), data.Version);
+    }
+
     private async Task<IReadOnlyList<CampaignConflict>> CheckConflictsAsync(Campaign campaign, bool force, CancellationToken cancellationToken)
     {
         var conflicts = await AnalyzeAsync(campaign, cancellationToken);

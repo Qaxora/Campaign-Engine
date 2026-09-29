@@ -587,6 +587,27 @@
         }
       }
     },
+    "/api/v1/campaigns/conflicts/report": {
+      "get": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "All live conflicts with both campaigns described, most severe first",
+        "description": "The deterministic analyzer is the only source; each side carries the engine\u0027s own summary, audience, schedule and products.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/product-lists": {
       "get": {
         "tags": [
@@ -3780,12 +3801,147 @@
           "sameGroup"
         ]
       },
+      "ConflictReport": {
+        "required": [
+          "liveCampaigns",
+          "errors",
+          "warnings",
+          "infos",
+          "catalogVersion",
+          "items"
+        ],
+        "type": "object",
+        "properties": {
+          "liveCampaigns": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "errors": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "warnings": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "infos": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "catalogVersion": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConflictReportItem"
+            }
+          }
+        }
+      },
+      "ConflictReportItem": {
+        "required": [
+          "conflict",
+          "campaign",
+          "other"
+        ],
+        "type": "object",
+        "properties": {
+          "conflict": {
+            "$ref": "#/components/schemas/CampaignConflict"
+          },
+          "campaign": {
+            "$ref": "#/components/schemas/ConflictSide"
+          },
+          "other": {
+            "$ref": "#/components/schemas/ConflictSide"
+          }
+        }
+      },
       "ConflictSeverity": {
         "enum": [
           "info",
           "warning",
           "error"
         ]
+      },
+      "ConflictSide": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "status",
+          "priority",
+          "stacking",
+          "summary",
+          "audience",
+          "schedule",
+          "products"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CampaignStatus"
+          },
+          "priority": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "stacking": {
+            "$ref": "#/components/schemas/StackingMode"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "CouponRule": {
         "type": "object",

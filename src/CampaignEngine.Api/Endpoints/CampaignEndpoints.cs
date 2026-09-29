@@ -107,6 +107,12 @@ public static class CampaignEndpoints
             .WithSummary("Conflicts of a (possibly unsaved) campaign with live campaigns")
             .Produces<IReadOnlyList<CampaignConflict>>();
 
+        group.MapGet("/conflicts/report", async (CampaignService service, CancellationToken ct) =>
+                await service.ConflictReportAsync(ct))
+            .WithSummary("All live conflicts with both campaigns described, most severe first")
+            .WithDescription("The deterministic analyzer is the only source; each side carries the engine's own summary, audience, schedule and products.")
+            .Produces<ConflictReport>();
+
         group.MapGet("/conflicts", async (CampaignService service, CancellationToken ct) =>
                 await service.AnalyzeAllAsync(ct))
             .WithSummary("All conflicts among live campaigns")

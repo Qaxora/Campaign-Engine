@@ -1,0 +1,6111 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Campaign Engine API",
+    "description": "Channel-agnostic retail campaign engine. Send the API key in the \u0060X-Api-Key\u0060 header. Polymorphic rules use a \u0060type\u0060 discriminator; see docs/rule-reference.md.",
+    "license": {
+      "name": "MIT"
+    },
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/snapshot": {
+      "get": {
+        "tags": [
+          "Snapshot"
+        ],
+        "summary": "All live campaigns and the product lists they use",
+        "description": "For local/offline evaluation. Poll with If-None-Match: \u003Cetag\u003E; the response is 304 while nothing changed. Contains active and paused campaigns that have not ended; paused ones never apply.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotDocument"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified"
+          }
+        }
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "summary": "Who changed what, newest first",
+        "description": "Filter by \u0060entityType\u0060 (campaign, productList, store, apiKey, webhook, member, organization) and \u0060entityId\u0060 (campaign / list / key / webhook id, store code, user id), \u0060action\u0060 (e.g. campaign.activated) or \u0060actorId\u0060.",
+        "parameters": [
+          {
+            "name": "entityType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfAuditEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns": {
+      "get": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "List campaigns",
+        "description": "Filters by status, channel (campaigns without channels match every channel), tag and a free-text search on code and name.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCampaign"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Create a campaign (always as draft)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Campaign"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{idOrCode}": {
+      "get": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Get a campaign by id or code",
+        "parameters": [
+          {
+            "name": "idOrCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}": {
+      "put": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Replace a campaign definition",
+        "description": "Send the \u0060version\u0060 you loaded; a different stored version returns 409. Live campaigns are re-checked for conflicts.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Campaign"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignChange"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Delete a draft campaign",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/activate": {
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Activate a draft or paused campaign",
+        "description": "Returns the conflicts with other live campaigns. Error-level conflicts (e.g. duplicate coupon codes) block activation unless force=true.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignChange"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/pause": {
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Pause an active campaign",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{id}/archive": {
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Archive a campaign (terminal)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/validate": {
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Validate a definition without saving it",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Campaign"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/conflicts": {
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Conflicts of a (possibly unsaved) campaign with live campaigns",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Campaign"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignConflict"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "All conflicts among live campaigns",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignConflict"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/product-lists": {
+      "get": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "List product lists (without SKUs)",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductListSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Create a product list",
+        "description": "Use kind \u0060globalExclusion\u0060 for products no campaign may ever discount (tobacco, gold, gift cards, \u2026).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/product-lists/{code}": {
+      "get": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Get a product list with its SKUs",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Update name, description and kind",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Delete a product list that no campaign uses",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/product-lists/{code}/skus": {
+      "post": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Add SKUs",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Replace all SKUs",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/product-lists/{code}/skus/remove": {
+      "post": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Remove SKUs",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkusRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/product-lists/{code}/skus/import": {
+      "put": {
+        "tags": [
+          "Product lists"
+        ],
+        "summary": "Import SKUs from a CSV or text file",
+        "description": "One SKU per line; for CSV the first column is used and a header row named \u0060sku\u0060 is skipped. mode=replace (default) or append. Example: \u0060curl -X PUT --data-binary @skus.csv -H \u0022Content-Type: text/csv\u0022 \u2026\u0060",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluate": {
+      "post": {
+        "tags": [
+          "Evaluation"
+        ],
+        "summary": "Price a cart",
+        "description": "Stateless: call it on every basket change. With explain=true the response lists every campaign that did not apply and why. Nothing is recorded; call POST /redemptions when the sale completes.",
+        "parameters": [
+          {
+            "name": "explain",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Cart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/redemptions": {
+      "post": {
+        "tags": [
+          "Redemptions"
+        ],
+        "summary": "Confirm a completed sale",
+        "description": "Re-evaluates the final cart and records the applied campaigns against usage limits and budgets. Idempotent on transactionId: retries return the stored result with 200 and replayed=true.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedemptionResult"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedemptionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/redemptions/{transactionId}": {
+      "get": {
+        "tags": [
+          "Redemptions"
+        ],
+        "summary": "Get a recorded transaction",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedemptionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/redemptions/{transactionId}/reverse": {
+      "post": {
+        "tags": [
+          "Redemptions"
+        ],
+        "summary": "Reverse a transaction (void / full return)",
+        "description": "Releases usage and budget. Idempotent.",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ReverseRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedemptionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/redemptions/offline": {
+      "post": {
+        "tags": [
+          "Redemptions"
+        ],
+        "summary": "Import a sale priced offline from a snapshot",
+        "description": "The sale already happened, so limits are not enforced; usage and budget are still counted. Idempotent on transactionId.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfflineRedemption"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RedemptionResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List webhook subscriptions",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookSubscription"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Subscribe a URL to change events",
+        "description": "Events: campaign.created|updated|activated|paused|archived|deleted, productList.created|updated|deleted, or wildcards \u0027*\u0027 and \u0027campaign.*\u0027. The signing secret is returned only in this response.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedWebhookSubscription"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/{id}": {
+      "delete": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Delete a subscription",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/{id}/ping": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Queue a test \u0027ping\u0027 event",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/{id}/deliveries": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Recent deliveries and their status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "take",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookDelivery"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api-keys": {
+      "get": {
+        "tags": [
+          "API keys"
+        ],
+        "summary": "List the organization\u0027s API keys (secrets are never returned)",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKey"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "API keys"
+        ],
+        "summary": "Create an API key",
+        "description": "Scopes: \u0060channel\u0060 (evaluate, redeem, snapshot) and/or \u0060admin\u0060 (management). The \u0060key\u0060 field is only returned in this response \u2014 store it in the integration\u0027s secret store.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedApiKey"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/api-keys/{id}/revoke": {
+      "post": {
+        "tags": [
+          "API keys"
+        ],
+        "summary": "Revoke an API key immediately",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Create an account (and, with organizationName, an organization owned by it)",
+        "description": "Returns a session token for \u0060Authorization: Bearer\u0060. The web app keeps it in an httpOnly cookie.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Sign in",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "End the current session",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "The signed-in user, the current organization and all memberships",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/switch-organization": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Act for another organization you belong to",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchOrganizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/organizations": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Create another organization (you become its owner) and switch to it",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/organization": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "The current organization",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Rename the organization",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameOrganizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Organization"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members": {
+      "get": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Members of the organization",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Member"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Add an existing account by email with a role (owner, admin, member)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMemberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/members/{userId}": {
+      "put": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Change a member\u0027s role; only owners manage ownership, and the last owner stays",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Member"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Remove a member",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/stores": {
+      "get": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "List stores",
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Store"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Register a store",
+        "description": "The code is what POS carts send as \u0060storeId\u0060 and what campaigns list under \u0060stores\u0060.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Store"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stores/{code}": {
+      "get": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Get a store by code",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Store"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Update a store (the code cannot change)",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Store"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Stores"
+        ],
+        "summary": "Delete a store",
+        "description": "Campaigns that list the code keep it; consider deactivating instead.",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Search the product catalog",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brand",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfProduct"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/facets": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Categories and brands with product counts",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogFacets"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/{sku}": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Get a product by SKU",
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Create or replace a product",
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Product"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Delete a product",
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/products/bulk": {
+      "post": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Create or replace up to 20 000 products",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BulkProduct"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/products/import": {
+      "put": {
+        "tags": [
+          "Products"
+        ],
+        "summary": "Import products from CSV",
+        "description": "Header row required. Columns: sku, name (required), brand, categories (separated by |), active; any other column becomes an attribute. \u0060,\u0060 \u0060;\u0060 and tab delimiters are detected. Existing SKUs are updated.",
+        "requestBody": {
+          "content": {
+            "text/csv": {
+              "schema": {
+                "type": "string"
+              }
+            },
+            "text/plain": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ledger/transactions": {
+      "get": {
+        "tags": [
+          "Ledger"
+        ],
+        "summary": "Search transactions, newest first",
+        "description": "\u0060from\u0060 is inclusive and \u0060to\u0060 exclusive (ISO 8601). \u0060campaign\u0060 filters by campaign code; \u0060search\u0060 matches the transaction id.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "storeId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offline",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfLedgerTransaction"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ledger/transactions/{transactionId}": {
+      "get": {
+        "tags": [
+          "Ledger"
+        ],
+        "summary": "A transaction with the discount of every campaign it used",
+        "parameters": [
+          {
+            "name": "transactionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerTransactionDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ledger/usage/campaigns": {
+      "get": {
+        "tags": [
+          "Ledger"
+        ],
+        "summary": "Redemptions, discount and limit / budget consumption per campaign",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignUsage"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ledger/usage/customers/{customerId}": {
+      "get": {
+        "tags": [
+          "Ledger"
+        ],
+        "summary": "What one customer has redeemed, per campaign",
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerUsage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/overview": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Campaign counts and redemption KPIs, with the previous period of the same length",
+        "description": "\u0060from\u0060 (inclusive) and \u0060to\u0060 (exclusive) are ISO 8601; the default is the last 30 days, the maximum 366 days. Reversed transactions are excluded.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsOverview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/campaigns": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Performance of every redeemed or active campaign, best first",
+        "description": "\u0060from\u0060 (inclusive) and \u0060to\u0060 (exclusive) are ISO 8601; the default is the last 30 days, the maximum 366 days. Reversed transactions are excluded.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignPerformance"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/top-campaigns": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "The campaigns that gave the most discount",
+        "description": "\u0060from\u0060 (inclusive) and \u0060to\u0060 (exclusive) are ISO 8601; the default is the last 30 days, the maximum 366 days. Reversed transactions are excluded.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignPerformance"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/trends": {
+      "get": {
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Daily transactions, redemptions and discount (empty days included)",
+        "description": "\u0060from\u0060 (inclusive) and \u0060to\u0060 (exclusive) are ISO 8601; the default is the last 30 days, the maximum 366 days. Reversed transactions are excluded. Days are cut in \u0060timeZone\u0060 (IANA or Windows id, default UTC), e.g. \u0060Europe/Istanbul\u0060.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "timeZone",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsTrend"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddMemberRequest": {
+        "required": [
+          "email",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "AnalyticsOverview": {
+        "required": [
+          "period",
+          "totalCampaigns",
+          "activeCampaigns",
+          "draftCampaigns",
+          "current",
+          "previous"
+        ],
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "totalCampaigns": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "activeCampaigns": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "draftCampaigns": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "current": {
+            "$ref": "#/components/schemas/OverviewMetrics"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/OverviewMetrics"
+          }
+        }
+      },
+      "AnalyticsTrend": {
+        "required": [
+          "period",
+          "timeZone",
+          "points"
+        ],
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/Period"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            }
+          }
+        }
+      },
+      "ApiKey": {
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "scopes",
+          "createdAt",
+          "lastUsedAt",
+          "revokedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AppliedCampaign": {
+        "required": [
+          "code",
+          "name",
+          "rewardType"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rewardType": {
+            "type": "string"
+          },
+          "couponCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "lineDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "shippingDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppliedLine"
+            }
+          },
+          "gifts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiftItem"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Copied from the campaign so channels can map it to their own ids."
+          }
+        }
+      },
+      "AppliedLine": {
+        "required": [
+          "lineId",
+          "discount"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "AuditEntry": {
+        "required": [
+          "id",
+          "actorType",
+          "actorId",
+          "actorName",
+          "action",
+          "entityType",
+          "entityId",
+          "entityName",
+          "summary",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "actorType": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "actorName": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "entityName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "BulkProduct": {
+        "required": [
+          "sku",
+          "name",
+          "brand",
+          "categories",
+          "attributes",
+          "active"
+        ],
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brand": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categories": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "attributes": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "active": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "Campaign": {
+        "required": [
+          "code",
+          "name",
+          "reward"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "description": "Unique, human-friendly code. Printed on receipts and used by other systems."
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/CampaignStatus"
+          },
+          "priority": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Higher values are applied first and win ties.",
+            "format": "int32"
+          },
+          "stacking": {
+            "$ref": "#/components/schemas/StackingMode"
+          },
+          "exclusivityGroup": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "At most one campaign per group applies to a cart: the one giving the largest discount."
+          },
+          "currency": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "If set, the campaign only applies to carts in this currency."
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/Schedule"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Channels the campaign runs on. Empty means every channel."
+          },
+          "stores": {
+            "$ref": "#/components/schemas/StoreScope"
+          },
+          "customerSegments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Customer segments the campaign is for. Empty means everyone, including anonymous customers."
+          },
+          "coupon": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "When set, one of the coupon codes must be present in the cart.",
+                "$ref": "#/components/schemas/CouponRule"
+              }
+            ]
+          },
+          "target": {
+            "description": "Products the reward applies to (and that count toward conditions by default).",
+            "$ref": "#/components/schemas/ProductSelector"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "description": "All conditions must hold. Use \u0060anyOf\u0060 / \u0060not\u0060 for other logic."
+          },
+          "reward": {
+            "$ref": "#/components/schemas/Reward"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/CampaignLimits"
+          },
+          "ignoreGlobalExclusions": {
+            "type": "boolean",
+            "description": "Allows discounting products in global exclusion lists. Use with care."
+          },
+          "displayMessage": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Text shown to the customer / cashier when the campaign applies."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Free-form references to other systems, e.g. \u0060{\u0022erpCampaignNo\u0022: \u00222026-0042\u0022}\u0060."
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Incremented on every change; used for optimistic concurrency.",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A campaign definition: who gets (audience), what (target \u002B reward), when (schedule),\nunder which circumstances (conditions) and how often (limits)."
+      },
+      "CampaignChange": {
+        "required": [
+          "campaign",
+          "conflicts",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "campaign": {
+            "$ref": "#/components/schemas/Campaign"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampaignConflict"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CampaignConflict": {
+        "required": [
+          "campaignId",
+          "campaignCode",
+          "otherId",
+          "otherCode",
+          "kind",
+          "severity",
+          "certainty",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "campaignCode": {
+            "type": "string"
+          },
+          "otherId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "otherCode": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConflictKind"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/ConflictSeverity"
+          },
+          "certainty": {
+            "$ref": "#/components/schemas/OverlapCertainty"
+          },
+          "message": {
+            "type": "string"
+          },
+          "combinedRateEstimate": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "CampaignHint": {
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayMessage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "missingAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "missingQuantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "CampaignLimits": {
+        "type": "object",
+        "properties": {
+          "maxRedemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Total number of transactions the campaign may be redeemed in.",
+            "format": "int32"
+          },
+          "maxRedemptionsPerCustomer": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Per identified customer. Anonymous carts are not limited by this.",
+            "format": "int32"
+          },
+          "budget": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Total discount the campaign may give away over its lifetime.",
+            "format": "double"
+          },
+          "maxDiscountPerOrder": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Cap on the discount given to a single cart.",
+            "format": "double"
+          }
+        }
+      },
+      "CampaignPerformance": {
+        "required": [
+          "campaignId",
+          "code",
+          "name",
+          "status",
+          "redemptions",
+          "discount",
+          "averageDiscount",
+          "discountShare",
+          "budget",
+          "budgetUsed",
+          "maxRedemptions"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CampaignStatus"
+          },
+          "redemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averageDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "discountShare": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "budget": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "budgetUsed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxRedemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CampaignStatus": {
+        "enum": [
+          "draft",
+          "active",
+          "paused",
+          "archived"
+        ]
+      },
+      "CampaignUsage": {
+        "required": [
+          "campaignId",
+          "code",
+          "name",
+          "status",
+          "redemptions",
+          "discountTotal",
+          "maxRedemptions",
+          "budget",
+          "budgetRemaining",
+          "reversedRedemptions",
+          "lastRedeemedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CampaignStatus"
+          },
+          "redemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discountTotal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxRedemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "budget": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "budgetRemaining": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "reversedRedemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lastRedeemedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "Cart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional id of the basket in the calling system; echoed back for tracing."
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 code. Campaigns restricted to another currency are ignored."
+          },
+          "channel": {
+            "type": "string",
+            "description": "Sales channel, free text agreed between systems, e.g. \u0060store\u0060, \u0060web\u0060, \u0060mobile\u0060."
+          },
+          "storeId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Store / warehouse / web-site code, if the channel has one."
+          },
+          "timestamp": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Moment of sale. Defaults to \u0022now\u0022; offline POS replays send the original time.",
+            "format": "date-time"
+          },
+          "customer": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CustomerInfo"
+              }
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CartLine"
+            }
+          },
+          "couponCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "payment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaymentInfo"
+              }
+            ]
+          },
+          "shippingAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Shipping fee before discounts. Only free-shipping rewards touch it.",
+            "format": "double"
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Free-form key/values for \u0060cartAttribute\u0060 conditions (e.g. \u0060deliveryType=clickAndCollect\u0060)."
+          }
+        },
+        "description": "The basket a channel (POS, web, mobile, \u2026) asks the engine to price.\nAll amounts are in string Cart.Currency and include tax the same way the channel\u0027s prices do."
+      },
+      "CartLine": {
+        "required": [
+          "lineId",
+          "sku"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string",
+            "description": "Id of the line in the calling system; unique within the cart."
+          },
+          "sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Units or a weight (e.g. 0.750 kg). Unit-based offers only use whole units.",
+            "format": "double"
+          },
+          "unitPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Price of one unit before campaign discounts.",
+            "format": "double"
+          },
+          "brand": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Category codes the product belongs to. Send the whole path\n(e.g. \u0060[\u0022apparel\u0022, \u0022apparel-men\u0022, \u0022apparel-men-tshirt\u0022]\u0060) so campaigns can target any level."
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "minimumUnitPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Price floor: no campaign may bring one unit below this price.",
+            "format": "double"
+          },
+          "discountable": {
+            "type": "boolean",
+            "description": "Set to false for items that must never be discounted (e.g. gift cards, deposits)."
+          }
+        }
+      },
+      "CatalogFacets": {
+        "required": [
+          "categories",
+          "brands",
+          "productCount"
+        ],
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetValue"
+            }
+          },
+          "brands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetValue"
+            }
+          },
+          "productCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "ChangeRoleRequest": {
+        "required": [
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "Condition": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ConditionMinSubtotalCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ConditionMinQuantityCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ConditionFirstOrderCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ConditionPaymentCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ConditionCartAttributeCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ConditionAllOfCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ConditionAnyOfCondition"
+          },
+          {
+            "$ref": "#/components/schemas/ConditionNotCondition"
+          }
+        ],
+        "description": "A predicate over the cart that must hold for a campaign to apply.\nSerialized with a \u0060\u0022type\u0022\u0060 discriminator. Conditions always look at the cart as sent by the\nchannel (list prices), never at discounts given by other campaigns.",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "minSubtotal": "#/components/schemas/ConditionMinSubtotalCondition",
+            "minQuantity": "#/components/schemas/ConditionMinQuantityCondition",
+            "firstOrder": "#/components/schemas/ConditionFirstOrderCondition",
+            "payment": "#/components/schemas/ConditionPaymentCondition",
+            "cartAttribute": "#/components/schemas/ConditionCartAttributeCondition",
+            "allOf": "#/components/schemas/ConditionAllOfCondition",
+            "anyOf": "#/components/schemas/ConditionAnyOfCondition",
+            "not": "#/components/schemas/ConditionNotCondition"
+          }
+        }
+      },
+      "ConditionAllOfCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "allOf"
+            ],
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            }
+          }
+        },
+        "description": "All nested conditions must hold."
+      },
+      "ConditionAnyOfCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "anyOf"
+            ],
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            }
+          }
+        },
+        "description": "At least one nested condition must hold."
+      },
+      "ConditionCartAttributeCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "cartAttribute"
+            ],
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "A free-form cart attribute must be present (and, if values are given, equal one of them)."
+      },
+      "ConditionFirstOrderCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "firstOrder"
+            ],
+            "type": "string"
+          }
+        },
+        "description": "Only for the customer\u0027s first order (as reported by the channel)."
+      },
+      "ConditionMinQuantityCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "minQuantity"
+            ],
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "products": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Which lines count. Defaults to the campaign\u0027s qualifying lines.",
+                "$ref": "#/components/schemas/ProductSelector"
+              }
+            ]
+          }
+        },
+        "description": "\u0022Buy at least N items\u0022."
+      },
+      "ConditionMinSubtotalCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "minSubtotal"
+            ],
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "products": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Which lines count. Defaults to the campaign\u0027s qualifying lines.",
+                "$ref": "#/components/schemas/ProductSelector"
+              }
+            ]
+          }
+        },
+        "description": "\u0022Spend at least X\u0022 \u2014 e.g. 500 TRY and above."
+      },
+      "ConditionNotCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "not"
+            ],
+            "type": "string"
+          },
+          "condition": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Condition"
+              }
+            ]
+          }
+        },
+        "description": "The nested condition must not hold."
+      },
+      "ConditionPaymentCondition": {
+        "properties": {
+          "type": {
+            "enum": [
+              "payment"
+            ],
+            "type": "string"
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bankCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cardBins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "BIN prefixes; a card matches when its BIN starts with one of them."
+          },
+          "minInstallments": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "maxInstallments": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "Payment-based campaigns: payment method, issuing bank, card BIN prefixes, installment count.\nEvery non-empty criterion must match."
+      },
+      "ConflictKind": {
+        "enum": [
+          "duplicateCoupon",
+          "stackedDiscount",
+          "exclusiveOverlap",
+          "samePriority",
+          "sameGroup"
+        ]
+      },
+      "ConflictSeverity": {
+        "enum": [
+          "info",
+          "warning",
+          "error"
+        ]
+      },
+      "CouponRule": {
+        "type": "object",
+        "properties": {
+          "codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maxUsesPerCode": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "How many times each code may be redeemed in total (e.g. 1 for single-use codes).",
+            "format": "int32"
+          }
+        }
+      },
+      "CreateApiKeyRequest": {
+        "required": [
+          "name",
+          "scopes"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreatedApiKey": {
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "scopes",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "key": {
+            "type": "string"
+          }
+        }
+      },
+      "CreatedWebhookSubscription": {
+        "required": [
+          "id",
+          "url",
+          "events",
+          "description",
+          "secret"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secret": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateOrganizationRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateProductListRequest": {
+        "required": [
+          "code",
+          "name",
+          "description",
+          "kind",
+          "skus"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProductListKind"
+          },
+          "skus": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateWebhookRequest": {
+        "required": [
+          "url",
+          "events",
+          "description",
+          "secret"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secret": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CustomerCampaignUsage": {
+        "required": [
+          "campaignCode",
+          "campaignName",
+          "redemptions",
+          "discount",
+          "maxRedemptionsPerCustomer",
+          "lastRedeemedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignCode": {
+            "type": "string"
+          },
+          "campaignName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "redemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxRedemptionsPerCustomer": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "lastRedeemedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CustomerInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Segments / tiers the customer belongs to, e.g. \u0060gold\u0060, \u0060employee\u0060."
+          },
+          "isFirstOrder": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CustomerUsage": {
+        "required": [
+          "customerId",
+          "transactions",
+          "totalDiscount",
+          "campaigns"
+        ],
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string"
+          },
+          "transactions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomerCampaignUsage"
+            }
+          }
+        }
+      },
+      "DayOfWeek": {
+        "enum": [
+          "sunday",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday"
+        ]
+      },
+      "EvaluationResult": {
+        "required": [
+          "currency"
+        ],
+        "type": "object",
+        "properties": {
+          "cartId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "catalogVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "subtotal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Sum of line gross amounts (quantity \u00D7 unit price).",
+            "format": "double"
+          },
+          "lineDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "shippingAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "shippingDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "totalDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Amount to pay: subtotal \u2212 discounts \u002B shipping.",
+            "format": "double"
+          },
+          "appliedCampaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AppliedCampaign"
+            }
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineResult"
+            }
+          },
+          "gifts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GiftItem"
+            }
+          },
+          "hints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampaignHint"
+            },
+            "description": "Campaigns the customer is close to (e.g. \u0022add 50 more for free shipping\u0022)."
+          },
+          "unusedCouponCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Coupon codes in the cart that did not produce a discount."
+          },
+          "rejections": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RejectedCampaign"
+            },
+            "description": "Only filled when an explanation was requested."
+          }
+        },
+        "description": "The priced cart: what applied, how much, to which lines \u2014 and optionally why not."
+      },
+      "FacetValue": {
+        "required": [
+          "value",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "count": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "GiftItem": {
+        "required": [
+          "sku",
+          "quantity",
+          "campaignCode"
+        ],
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "campaignCode": {
+            "type": "string"
+          }
+        }
+      },
+      "ImportResult": {
+        "required": [
+          "created",
+          "updated",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "created": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updated": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "total": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "LedgerRedemption": {
+        "required": [
+          "campaignId",
+          "campaignCode",
+          "campaignName",
+          "couponCode",
+          "discount",
+          "status",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "campaignCode": {
+            "type": "string"
+          },
+          "campaignName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "couponCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RedemptionStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LedgerTransaction": {
+        "required": [
+          "transactionId",
+          "status",
+          "offline",
+          "client",
+          "channel",
+          "storeId",
+          "customerId",
+          "currency",
+          "totalDiscount",
+          "campaignCount",
+          "createdAt",
+          "reversedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RedemptionStatus"
+          },
+          "offline": {
+            "type": "boolean"
+          },
+          "client": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "storeId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customerId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "totalDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "campaignCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reversedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "LedgerTransactionDetail": {
+        "required": [
+          "transaction",
+          "reverseReason",
+          "redemptions"
+        ],
+        "type": "object",
+        "properties": {
+          "transaction": {
+            "$ref": "#/components/schemas/LedgerTransaction"
+          },
+          "reverseReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "redemptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerRedemption"
+            }
+          }
+        }
+      },
+      "LineDiscount": {
+        "required": [
+          "campaignCode",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignCode": {
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "LineResult": {
+        "required": [
+          "lineId",
+          "sku"
+        ],
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "unitPrice": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "gross": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "net": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "discounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineDiscount"
+            }
+          }
+        }
+      },
+      "LoginRequest": {
+        "required": [
+          "email",
+          "password",
+          "organization"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "organization": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "Member": {
+        "required": [
+          "userId",
+          "email",
+          "name",
+          "role",
+          "joinedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MemberRole": {
+        "enum": [
+          "member",
+          "admin",
+          "owner"
+        ]
+      },
+      "MembershipInfo": {
+        "required": [
+          "organizationId",
+          "organizationName",
+          "organizationSlug",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "organizationName": {
+            "type": "string"
+          },
+          "organizationSlug": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MemberRole"
+          }
+        }
+      },
+      "OfflineCampaign": {
+        "required": [
+          "campaignCode"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignCode": {
+            "type": "string"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "couponCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "OfflineRedemption": {
+        "required": [
+          "transactionId"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "storeId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customerId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfflineCampaign"
+            }
+          }
+        }
+      },
+      "Organization": {
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "plan",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/Plan"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OverlapCertainty": {
+        "enum": [
+          "none",
+          "possible",
+          "certain"
+        ]
+      },
+      "OverviewMetrics": {
+        "required": [
+          "transactions",
+          "redemptions",
+          "discountTotal",
+          "averageDiscountPerTransaction",
+          "campaignsRedeemed"
+        ],
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "redemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discountTotal": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "averageDiscountPerTransaction": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "campaignsRedeemed": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfAuditEntry": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEntry"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfCampaign": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Campaign"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfLedgerTransaction": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerTransaction"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PagedResultOfProduct": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Product"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "PaymentInfo": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "e.g. \u0060creditCard\u0060, \u0060cash\u0060, \u0060wallet\u0060, \u0060giftCard\u0060."
+          },
+          "bankCode": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Issuing bank code, for bank-sponsored campaigns."
+          },
+          "cardBin": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "First 6\u20138 digits of the card number."
+          },
+          "installments": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "Period": {
+        "required": [
+          "from",
+          "to"
+        ],
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Plan": {
+        "enum": [
+          "free",
+          "growth",
+          "enterprise"
+        ]
+      },
+      "Product": {
+        "required": [
+          "sku",
+          "name",
+          "brand",
+          "categories",
+          "attributes",
+          "active",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "brand": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProductList": {
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "description": "Stable code campaigns refer to, e.g. \u0060NO-DISCOUNT\u0060, \u0060SUMMER-26-TSHIRTS\u0060."
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProductListKind"
+          },
+          "skus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A named, reusable set of SKUs maintained through the API instead of SQL scripts."
+      },
+      "ProductListKind": {
+        "enum": [
+          "standard",
+          "globalExclusion"
+        ]
+      },
+      "ProductListSummary": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "description",
+          "kind",
+          "skuCount",
+          "version",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProductListKind"
+          },
+          "skuCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProductRequest": {
+        "required": [
+          "name",
+          "brand",
+          "categories",
+          "attributes",
+          "active"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "brand": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "categories": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "attributes": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "active": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "ProductSelector": {
+        "type": "object",
+        "properties": {
+          "skus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "brands": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "productLists": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Codes of ProductLists."
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "Attribute name \u2192 accepted values, e.g. \u0060{\u0022season\u0022: [\u0022SS26\u0022]}\u0060."
+          },
+          "excludeSkus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excludeCategories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excludeBrands": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excludeProductLists": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Describes a set of products. A line matches when it matches \u003Cem\u003Eany\u003C/em\u003E include criterion\n(or there are no include criteria at all) and \u003Cem\u003Eno\u003C/em\u003E exclude criterion.\nAll comparisons are case-insensitive."
+      },
+      "RedeemedCampaign": {
+        "required": [
+          "campaignId",
+          "campaignCode",
+          "discount",
+          "couponCode"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "campaignCode": {
+            "type": "string"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "couponCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RedeemRequest": {
+        "required": [
+          "transactionId",
+          "cart"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "cart": {
+            "$ref": "#/components/schemas/Cart"
+          }
+        }
+      },
+      "RedemptionResult": {
+        "required": [
+          "transactionId"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RedemptionStatus"
+          },
+          "offline": {
+            "type": "boolean"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reversedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "totalDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RedeemedCampaign"
+            }
+          },
+          "evaluation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EvaluationResult"
+              }
+            ]
+          }
+        }
+      },
+      "RedemptionStatus": {
+        "enum": [
+          "confirmed",
+          "reversed"
+        ]
+      },
+      "RegisterRequest": {
+        "required": [
+          "email",
+          "password",
+          "name",
+          "organizationName"
+        ],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "organizationName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RejectedCampaign": {
+        "required": [
+          "campaignId",
+          "code",
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/RejectionReason"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RejectionReason": {
+        "enum": [
+          "notActive",
+          "currencyMismatch",
+          "outsideSchedule",
+          "channelMismatch",
+          "storeMismatch",
+          "segmentMismatch",
+          "couponMissing",
+          "couponExhausted",
+          "usageLimitReached",
+          "customerLimitReached",
+          "budgetExhausted",
+          "noEligibleItems",
+          "conditionNotMet",
+          "lostInExclusivityGroup",
+          "notSelected",
+          "noDiscount",
+          "invalidDefinition"
+        ]
+      },
+      "RenameOrganizationRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ReverseRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "Reward": {
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/RewardPercentageDiscountReward"
+          },
+          {
+            "$ref": "#/components/schemas/RewardAmountDiscountReward"
+          },
+          {
+            "$ref": "#/components/schemas/RewardFixedUnitPriceReward"
+          },
+          {
+            "$ref": "#/components/schemas/RewardBuyXGetYReward"
+          },
+          {
+            "$ref": "#/components/schemas/RewardBundlePriceReward"
+          },
+          {
+            "$ref": "#/components/schemas/RewardTieredDiscountReward"
+          },
+          {
+            "$ref": "#/components/schemas/RewardFreeShippingReward"
+          },
+          {
+            "$ref": "#/components/schemas/RewardGiftProductReward"
+          }
+        ],
+        "description": "What the customer gets when a campaign applies. Serialized with a \u0060\u0022type\u0022\u0060 discriminator.",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "percentageDiscount": "#/components/schemas/RewardPercentageDiscountReward",
+            "amountDiscount": "#/components/schemas/RewardAmountDiscountReward",
+            "fixedUnitPrice": "#/components/schemas/RewardFixedUnitPriceReward",
+            "buyXGetY": "#/components/schemas/RewardBuyXGetYReward",
+            "bundlePrice": "#/components/schemas/RewardBundlePriceReward",
+            "tieredDiscount": "#/components/schemas/RewardTieredDiscountReward",
+            "freeShipping": "#/components/schemas/RewardFreeShippingReward",
+            "giftProduct": "#/components/schemas/RewardGiftProductReward"
+          }
+        }
+      },
+      "RewardAmountDiscountReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "amountDiscount"
+            ],
+            "type": "string"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "perUnit": {
+            "type": "boolean"
+          }
+        },
+        "description": "\u0022100 off the basket\u0022 or, with bool AmountDiscountReward.PerUnit, \u002210 off every unit\u0022."
+      },
+      "RewardBundlePriceReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "bundlePrice"
+            ],
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "price": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxApplications": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "description": "\u0022Any 3 for 100\u0022. Sets are built from the most expensive units first."
+      },
+      "RewardBuyXGetYReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "buyXGetY"
+            ],
+            "type": "string"
+          },
+          "buyQuantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "getQuantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discountPercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Discount on the \u0022get\u0022 units; 100 means free.",
+            "format": "double"
+          },
+          "getProducts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Where the \u0022get\u0022 units come from. Null means the same products as the target.",
+                "$ref": "#/components/schemas/ProductSelector"
+              }
+            ]
+          },
+          "maxApplications": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "How many sets per cart at most. Null means unlimited.",
+            "format": "int32"
+          }
+        },
+        "description": "\u0022Buy X get Y\u0022: \u00223 for 2\u0022 is \u0060buyQuantity: 2, getQuantity: 1\u0060; \u0022second item 50% off\u0022 is\n\u0060buyQuantity: 1, getQuantity: 1, discountPercent: 50\u0060."
+      },
+      "RewardFixedUnitPriceReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "fixedUnitPrice"
+            ],
+            "type": "string"
+          },
+          "price": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "\u0022Selected products for 99.90 each\u0022. Units already used by other unit offers are skipped."
+      },
+      "RewardFreeShippingReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "freeShipping"
+            ],
+            "type": "string"
+          },
+          "maxAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Optional cap; null means the whole shipping fee.",
+            "format": "double"
+          }
+        },
+        "description": "Free or discounted shipping."
+      },
+      "RewardGiftProductReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "giftProduct"
+            ],
+            "type": "string"
+          },
+          "sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        },
+        "description": "A free product added to the order (the channel adds the line; the engine reports it)."
+      },
+      "RewardPercentageDiscountReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "percentageDiscount"
+            ],
+            "type": "string"
+          },
+          "percent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Optional cap for this reward, e.g. \u002220% off, at most 200\u0022.",
+            "format": "double"
+          }
+        },
+        "description": "\u002220% off\u0022 the target products."
+      },
+      "RewardTieredDiscountReward": {
+        "properties": {
+          "type": {
+            "enum": [
+              "tieredDiscount"
+            ],
+            "type": "string"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/TierBasis"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Tier"
+            }
+          }
+        },
+        "description": "\u0022Spend 500 get 50 off, spend 1000 get 150 off\u0022 or \u0022buy 2 get 10%, buy 3 get 20%\u0022.\nThe highest reached tier applies. The basis is measured on the target lines at list price."
+      },
+      "Schedule": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Inclusive start. Null means \u0022since forever\u0022.",
+            "format": "date-time"
+          },
+          "endsAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Exclusive end. Null means \u0022until stopped\u0022.",
+            "format": "date-time"
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "IANA (\u0060Europe/Istanbul\u0060) or Windows time zone id."
+          },
+          "daysOfWeek": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayOfWeek"
+            },
+            "description": "If not empty, only on these days (local time)."
+          },
+          "dailyStart": {
+            "description": "Daily window start (local time, inclusive). A window may cross midnight, e.g. 22:00\u201302:00.",
+            "format": "time"
+          },
+          "dailyEnd": {
+            "description": "Daily window end (local time, exclusive).",
+            "format": "time"
+          }
+        },
+        "description": "When a campaign is valid. Date boundaries are absolute instants; the weekly/daily window is\ninterpreted in string Schedule.TimeZone so that \u0022every Saturday 10:00\u201314:00\u0022 means local store time."
+      },
+      "SessionInfo": {
+        "required": [
+          "user",
+          "current",
+          "memberships",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/UserInfo"
+          },
+          "current": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MembershipInfo"
+              }
+            ]
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipInfo"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SignInResult": {
+        "required": [
+          "token",
+          "session"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionInfo"
+          }
+        }
+      },
+      "SkusRequest": {
+        "required": [
+          "skus"
+        ],
+        "type": "object",
+        "properties": {
+          "skus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SnapshotDocument": {
+        "required": [
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "campaigns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Campaign"
+            }
+          },
+          "productLists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductList"
+            }
+          }
+        },
+        "description": "The wire format of \u0060GET /api/v1/snapshot\u0060: every live campaign plus the product lists they\nneed. A channel can store it and evaluate carts locally (e.g. a POS while offline)."
+      },
+      "StackingMode": {
+        "enum": [
+          "stackable",
+          "exclusive"
+        ]
+      },
+      "Store": {
+        "required": [
+          "id",
+          "code",
+          "name",
+          "channel",
+          "city",
+          "active",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "channel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StoreRequest": {
+        "required": [
+          "code",
+          "name",
+          "channel",
+          "city",
+          "active"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "channel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "city": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "active": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "StoreScope": {
+        "type": "object",
+        "properties": {
+          "include": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "If not empty, only these stores."
+          },
+          "exclude": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SwitchOrganizationRequest": {
+        "required": [
+          "organizationId"
+        ],
+        "type": "object",
+        "properties": {
+          "organizationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "Tier": {
+        "type": "object",
+        "properties": {
+          "threshold": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "percent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "amount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "maxDiscount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Cap for percentage tiers.",
+            "format": "double"
+          }
+        }
+      },
+      "TierBasis": {
+        "enum": [
+          "subtotal",
+          "quantity"
+        ]
+      },
+      "TrendPoint": {
+        "required": [
+          "date",
+          "transactions",
+          "redemptions",
+          "discount"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "transactions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "redemptions": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          }
+        }
+      },
+      "UpdateProductListRequest": {
+        "required": [
+          "name",
+          "description",
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProductListKind"
+          }
+        }
+      },
+      "UserInfo": {
+        "required": [
+          "id",
+          "email",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationResponse": {
+        "required": [
+          "valid",
+          "errors",
+          "warnings"
+        ],
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "WebhookDelivery": {
+        "required": [
+          "id",
+          "eventType",
+          "createdAt",
+          "attempts",
+          "deliveredAt",
+          "failed",
+          "lastError"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attempts": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "deliveredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "failed": {
+            "type": "boolean"
+          },
+          "lastError": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "WebhookSubscription": {
+        "required": [
+          "id",
+          "url",
+          "events",
+          "description",
+          "active",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "url": {
+            "type": "string"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "description": "API key of the calling system.",
+        "name": "X-Api-Key",
+        "in": "header"
+      },
+      "Session": {
+        "type": "http",
+        "description": "Session token from POST /api/v1/auth/login (web app users).",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Snapshot"
+    },
+    {
+      "name": "Audit"
+    },
+    {
+      "name": "Campaigns"
+    },
+    {
+      "name": "Product lists"
+    },
+    {
+      "name": "Evaluation"
+    },
+    {
+      "name": "Redemptions"
+    },
+    {
+      "name": "Webhooks"
+    },
+    {
+      "name": "API keys"
+    },
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Organization"
+    },
+    {
+      "name": "Members"
+    },
+    {
+      "name": "Stores"
+    },
+    {
+      "name": "Products"
+    },
+    {
+      "name": "Ledger"
+    },
+    {
+      "name": "Analytics"
+    }
+  ]
+}

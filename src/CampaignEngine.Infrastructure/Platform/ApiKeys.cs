@@ -78,9 +78,9 @@ public sealed class ApiKeyService(CampaignDbContext db, ITenantContext tenant, A
             errors.Add($"scopes must be one or more of: {string.Join(", ", ApiKeyScopes.All)}.");
         }
 
-        if (secret is { Length: < 12 })
+        if (secret is { Length: < 8 })
         {
-            errors.Add("A fixed secret must be at least 12 characters.");
+            errors.Add("A fixed secret must be at least 8 characters.");
         }
 
         if (errors.Count > 0)

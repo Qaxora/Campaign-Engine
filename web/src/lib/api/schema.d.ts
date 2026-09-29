@@ -572,6 +572,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/campaigns/conflicts/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All live conflicts with both campaigns described, most severe first
+         * @description The deterministic analyzer is the only source; each side carries the engine's own summary, audience, schedule and products.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ConflictReport"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/product-lists": {
         parameters: {
             query?: never;
@@ -2953,8 +2992,39 @@ export interface components {
         };
         /** @enum {unknown} */
         ConflictKind: "duplicateCoupon" | "stackedDiscount" | "exclusiveOverlap" | "samePriority" | "sameGroup";
+        ConflictReport: {
+            /** Format: int32 */
+            liveCampaigns: number | string;
+            /** Format: int32 */
+            errors: number | string;
+            /** Format: int32 */
+            warnings: number | string;
+            /** Format: int32 */
+            infos: number | string;
+            catalogVersion: string;
+            items: components["schemas"]["ConflictReportItem"][];
+        };
+        ConflictReportItem: {
+            conflict: components["schemas"]["CampaignConflict"];
+            campaign: components["schemas"]["ConflictSide"];
+            other: components["schemas"]["ConflictSide"];
+        };
         /** @enum {unknown} */
         ConflictSeverity: "info" | "warning" | "error";
+        ConflictSide: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            status: components["schemas"]["CampaignStatus"];
+            /** Format: int32 */
+            priority: number | string;
+            stacking: components["schemas"]["StackingMode"];
+            summary: string;
+            audience: string[];
+            schedule: string[];
+            products: string[];
+        };
         CouponRule: {
             codes?: string[];
             /**

@@ -2811,7 +2811,7 @@
             "format": "date-time"
           }
         },
-        "description": "A campaign definition: who gets (audience), what (target \u002B reward), when (schedule),\r\nunder which circumstances (conditions) and how often (limits)."
+        "description": "A campaign definition: who gets (audience), what (target \u002B reward), when (schedule),\nunder which circumstances (conditions) and how often (limits)."
       },
       "CampaignChange": {
         "required": [
@@ -3245,7 +3245,7 @@
             "description": "Free-form key/values for \u0060cartAttribute\u0060 conditions (e.g. \u0060deliveryType=clickAndCollect\u0060)."
           }
         },
-        "description": "The basket a channel (POS, web, mobile, \u2026) asks the engine to price.\r\nAll amounts are in string Cart.Currency and include tax the same way the channel\u0027s prices do."
+        "description": "The basket a channel (POS, web, mobile, \u2026) asks the engine to price.\nAll amounts are in string Cart.Currency and include tax the same way the channel\u0027s prices do."
       },
       "CartLine": {
         "required": [
@@ -3290,7 +3290,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Category codes the product belongs to. Send the whole path\r\n(e.g. \u0060[\u0022apparel\u0022, \u0022apparel-men\u0022, \u0022apparel-men-tshirt\u0022]\u0060) so campaigns can target any level."
+            "description": "Category codes the product belongs to. Send the whole path\n(e.g. \u0060[\u0022apparel\u0022, \u0022apparel-men\u0022, \u0022apparel-men-tshirt\u0022]\u0060) so campaigns can target any level."
           },
           "attributes": {
             "type": "object",
@@ -3386,7 +3386,7 @@
             "$ref": "#/components/schemas/ConditionNotCondition"
           }
         ],
-        "description": "A predicate over the cart that must hold for a campaign to apply.\r\nSerialized with a \u0060\u0022type\u0022\u0060 discriminator. Conditions always look at the cart as sent by the\r\nchannel (list prices), never at discounts given by other campaigns.",
+        "description": "A predicate over the cart that must hold for a campaign to apply.\nSerialized with a \u0060\u0022type\u0022\u0060 discriminator. Conditions always look at the cart as sent by the\nchannel (list prices), never at discounts given by other campaigns.",
         "discriminator": {
           "propertyName": "type",
           "mapping": {
@@ -3593,7 +3593,7 @@
             "format": "int32"
           }
         },
-        "description": "Payment-based campaigns: payment method, issuing bank, card BIN prefixes, installment count.\r\nEvery non-empty criterion must match."
+        "description": "Payment-based campaigns: payment method, issuing bank, card BIN prefixes, installment count.\nEvery non-empty criterion must match."
       },
       "ConflictKind": {
         "enum": [
@@ -5068,7 +5068,7 @@
             }
           }
         },
-        "description": "Describes a set of products. A line matches when it matches \u003Cem\u003Eany\u003C/em\u003E include criterion\r\n(or there are no include criteria at all) and \u003Cem\u003Eno\u003C/em\u003E exclude criterion.\r\nAll comparisons are case-insensitive."
+        "description": "Describes a set of products. A line matches when it matches \u003Cem\u003Eany\u003C/em\u003E include criterion\n(or there are no include criteria at all) and \u003Cem\u003Eno\u003C/em\u003E exclude criterion.\nAll comparisons are case-insensitive."
       },
       "RedeemedCampaign": {
         "required": [
@@ -5435,7 +5435,7 @@
             "format": "int32"
           }
         },
-        "description": "\u0022Buy X get Y\u0022: \u00223 for 2\u0022 is \u0060buyQuantity: 2, getQuantity: 1\u0060; \u0022second item 50% off\u0022 is\r\n\u0060buyQuantity: 1, getQuantity: 1, discountPercent: 50\u0060."
+        "description": "\u0022Buy X get Y\u0022: \u00223 for 2\u0022 is \u0060buyQuantity: 2, getQuantity: 1\u0060; \u0022second item 50% off\u0022 is\n\u0060buyQuantity: 1, getQuantity: 1, discountPercent: 50\u0060."
       },
       "RewardFixedUnitPriceReward": {
         "properties": {
@@ -5546,7 +5546,7 @@
             }
           }
         },
-        "description": "\u0022Spend 500 get 50 off, spend 1000 get 150 off\u0022 or \u0022buy 2 get 10%, buy 3 get 20%\u0022.\r\nThe highest reached tier applies. The basis is measured on the target lines at list price."
+        "description": "\u0022Spend 500 get 50 off, spend 1000 get 150 off\u0022 or \u0022buy 2 get 10%, buy 3 get 20%\u0022.\nThe highest reached tier applies. The basis is measured on the target lines at list price."
       },
       "Schedule": {
         "type": "object",
@@ -5587,7 +5587,7 @@
             "format": "time"
           }
         },
-        "description": "When a campaign is valid. Date boundaries are absolute instants; the weekly/daily window is\r\ninterpreted in string Schedule.TimeZone so that \u0022every Saturday 10:00\u201314:00\u0022 means local store time."
+        "description": "When a campaign is valid. Date boundaries are absolute instants; the weekly/daily window is\ninterpreted in string Schedule.TimeZone so that \u0022every Saturday 10:00\u201314:00\u0022 means local store time."
       },
       "SessionInfo": {
         "required": [
@@ -5678,7 +5678,7 @@
             }
           }
         },
-        "description": "The wire format of \u0060GET /api/v1/snapshot\u0060: every live campaign plus the product lists they\r\nneed. A channel can store it and evaluate carts locally (e.g. a POS while offline)."
+        "description": "The wire format of \u0060GET /api/v1/snapshot\u0060: every live campaign plus the product lists they\nneed. A channel can store it and evaluate carts locally (e.g. a POS while offline)."
       },
       "StackingMode": {
         "enum": [

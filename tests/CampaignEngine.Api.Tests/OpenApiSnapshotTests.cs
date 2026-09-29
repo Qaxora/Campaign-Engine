@@ -54,7 +54,8 @@ public sealed class OpenApiSnapshotTests(ApiFactory factory) : IClassFixture<Api
     {
         var node = JsonNode.Parse(json)!.AsObject();
         node.Remove("servers");
-        return node.ToJsonString(Indented).ReplaceLineEndings("\n") + "\n";
+        // Doc comments carry the checkout's line endings (CRLF on Windows); compare them as LF.
+        return node.ToJsonString(Indented).Replace(@"\r\n", @"\n", StringComparison.Ordinal).ReplaceLineEndings("\n") + "\n";
     }
 
     private static string RepositoryRoot()

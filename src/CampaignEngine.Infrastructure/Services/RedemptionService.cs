@@ -101,6 +101,7 @@ public sealed class RedemptionService(CampaignDbContext db, ITenantContext tenan
                 // A concurrent redemption changed a counter (limits must be re-checked) or recorded the
                 // same transaction id (the next loop returns it). Start over with fresh data.
                 db.ChangeTracker.Clear();
+                await Task.Delay(Random.Shared.Next(5, 25 * attempt), cancellationToken); // jitter so racing requests do not collide again
             }
         }
     }
@@ -159,6 +160,7 @@ public sealed class RedemptionService(CampaignDbContext db, ITenantContext tenan
             {
                 ThrowIfExhausted(attempt, ex);
                 db.ChangeTracker.Clear();
+                await Task.Delay(Random.Shared.Next(5, 25 * attempt), cancellationToken); // jitter so racing requests do not collide again
             }
         }
     }
@@ -195,6 +197,7 @@ public sealed class RedemptionService(CampaignDbContext db, ITenantContext tenan
             {
                 ThrowIfExhausted(attempt, ex);
                 db.ChangeTracker.Clear();
+                await Task.Delay(Random.Shared.Next(5, 25 * attempt), cancellationToken); // jitter so racing requests do not collide again
             }
         }
     }

@@ -41,6 +41,7 @@ app.MapAccountEndpoints();
 app.MapStoreEndpoints();
 app.MapProductEndpoints();
 app.MapLedgerEndpoints();
+app.MapAnalyticsEndpoints();
 
 await app.Services.InitializeCampaignDatabaseAsync();
 await app.Services.SeedPlatformAsync();

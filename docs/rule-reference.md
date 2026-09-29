@@ -129,3 +129,11 @@ Rejection reasons: `notActive`, `currencyMismatch`, `outsideSchedule`, `channelM
 2. Register it with `[JsonDerivedType(typeof(MyRule), "myRule")]` on the base class.
 3. Implement `Evaluate` / `Apply` (rewards must change prices only through `RewardContext`) and `Validate`.
 4. Add tests in `tests/CampaignEngine.Core.Tests` and a row to this file.
+
+## Plain-English descriptions
+
+`GET /api/v1/campaigns/{idOrCode}/description` (and `POST /api/v1/campaigns/describe` for an unsaved
+definition) returns the campaign described by the engine itself — summary, reward, conditions,
+products, audience, schedule, limits and combination. The web app, e-mails and the AI assistant's
+fallback all use this text, so no client has to interpret rule types. When you add a rule type, add
+its sentence to `CampaignDescriber` and a case to `DescriberTests`.

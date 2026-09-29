@@ -23,12 +23,33 @@ public static class CampaignEndpoints
                 string? channel,
                 string? search,
                 string? tag,
+                DateTimeOffset? activeFrom,
+                DateTimeOffset? activeTo,
+                string? sort,
+                string? order,
                 int? page,
                 int? pageSize,
                 CancellationToken ct) =>
-            await service.ListAsync(new CampaignQuery(QueryEnum.Parse<CampaignStatus>(status, "status"), channel, search, tag, page ?? 1, pageSize ?? 50), ct))
+            await service.ListAsync(
+                new CampaignQuery(
+                    QueryEnum.Parse<CampaignStatus>(status, "status"), channel, search, tag, activeFrom, activeTo,
+                    QueryEnum.Parse<CampaignSort>(sort, "sort") ?? CampaignSort.Updated,
+                    !string.Equals(order, "asc", StringComparison.OrdinalIgnoreCase),
+                    page ?? 1, pageSize ?? 50),
+                ct))
             .WithSummary("List campaigns")
-            .WithDescription("Filters by status, channel (campaigns without channels match every channel), tag and a free-text search on code and name.");
+            .WithDescription("Filters by status, channel (campaigns without channels match every channel), tag, a free-text search on code and name, " +
+                             "and `activeFrom` / `activeTo`: campaigns whose schedule window overlaps that range. " +
+                             "`sort` = updated (default), priority, name, code, startsAt, endsAt; `order` = desc (default) or asc.")
+            .Produces<PagedResult<Campaign>>();
+
+        group.MapGet("/{idOrCode}/description", async Task<IResult> (string idOrCode, CampaignService service, CancellationToken ct) =>
+                await service.FindAsync(idOrCode, ct) is { } campaign ? Results.Ok(CampaignDescriber.Describe(campaign)) : Results.NotFound())
+            .WithSummary("The campaign in plain English, section by section")
+            .Produces<CampaignDescription>();
+
+        group.MapPost("/describe", (Campaign campaign) => CampaignDescriber.Describe(campaign))
+            .WithSummary("Describe an unsaved definition in plain English");
 
         group.MapGet("/{idOrCode}", async Task<IResult> (string idOrCode, CampaignService service, CancellationToken ct) =>
                 await service.FindAsync(idOrCode, ct) is { } campaign ? Results.Ok(campaign) : Results.NotFound())

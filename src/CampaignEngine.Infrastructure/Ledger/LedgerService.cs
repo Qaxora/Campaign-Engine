@@ -146,10 +146,16 @@ public sealed class LedgerService(CampaignDbContext db)
     }
 
     /// <summary>Usage per campaign, including campaigns that were never redeemed.</summary>
-    public async Task<IReadOnlyList<CampaignUsage>> CampaignUsageAsync(CampaignStatus? status = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CampaignUsage>> CampaignUsageAsync(CampaignStatus? status = null, CancellationToken cancellationToken = default) =>
+        await CampaignUsageAsync(status, campaignId: null, cancellationToken);
+
+    public async Task<CampaignUsage?> CampaignUsageAsync(Guid campaignId, CancellationToken cancellationToken = default) =>
+        (await CampaignUsageAsync(null, campaignId, cancellationToken)).SingleOrDefault();
+
+    private async Task<IReadOnlyList<CampaignUsage>> CampaignUsageAsync(CampaignStatus? status, Guid? campaignId, CancellationToken cancellationToken)
     {
         var campaigns = await db.Campaigns.AsNoTracking()
-            .Where(c => status == null || c.Status == status)
+            .Where(c => (status == null || c.Status == status) && (campaignId == null || c.Id == campaignId))
             .ToListAsync(cancellationToken);
         var ids = campaigns.Select(c => c.Id).ToList();
 

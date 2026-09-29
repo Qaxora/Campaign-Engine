@@ -105,7 +105,7 @@ export interface paths {
         };
         /**
          * List campaigns
-         * @description Filters by status, channel (campaigns without channels match every channel), tag and a free-text search on code and name.
+         * @description Filters by status, channel (campaigns without channels match every channel), tag, a free-text search on code and name, and `activeFrom` / `activeTo`: campaigns whose schedule window overlaps that range. `sort` = updated (default), priority, name, code, startsAt, endsAt; `order` = desc (default) or asc.
          */
         get: {
             parameters: {
@@ -114,6 +114,10 @@ export interface paths {
                     channel?: string;
                     search?: string;
                     tag?: string;
+                    activeFrom?: string;
+                    activeTo?: string;
+                    sort?: string;
+                    order?: string;
                     page?: number | string;
                     pageSize?: number | string;
                 };
@@ -156,6 +160,84 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Campaign"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/campaigns/{idOrCode}/description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The campaign in plain English, section by section */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    idOrCode: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CampaignDescription"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/campaigns/describe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Describe an unsaved definition in plain English */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["Campaign"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CampaignDescription"];
                     };
                 };
             };
@@ -2235,6 +2317,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ledger/usage/campaigns/{campaignId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Usage of one campaign */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    campaignId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CampaignUsage"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ledger/usage/customers/{customerId}": {
         parameters: {
             query?: never;
@@ -2602,6 +2722,17 @@ export interface components {
             message: string;
             /** Format: double */
             combinedRateEstimate?: null | number | string;
+        };
+        /** @description A campaign definition in plain English, section by section. */
+        CampaignDescription: {
+            summary: string;
+            reward: string;
+            conditions: string[];
+            products: string[];
+            audience: string[];
+            schedule: string[];
+            limits: string[];
+            combination: string;
         };
         CampaignHint: {
             /** Format: uuid */

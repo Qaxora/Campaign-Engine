@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Pencil, ShieldCheck } from "lucide-react";
 import { StatusBadge } from "@/components/campaigns/badges";
 import { ConflictList } from "@/components/campaigns/conflict-list";
 import { LifecycleActions } from "@/components/campaigns/lifecycle-actions";
 import { Kpi } from "@/components/dashboard/kpi";
+import { buttonClass } from "@/components/ui/button";
 import { Badge, Card, CardHeader } from "@/components/ui/card";
 import { getSession, serverApi } from "@/lib/api/server";
 import { formatAmount, formatDate, formatInteger, formatPercent, formatRelative, toNumber } from "@/lib/format";
@@ -53,7 +54,12 @@ export default async function CampaignPage({ params }: PageProps<"/campaigns/[id
           {campaign.description ? <p className="mt-1 max-w-3xl text-sm text-muted">{campaign.description}</p> : null}
         </div>
         {canManage && campaign.status !== "archived" ? (
-          <LifecycleActions id={campaign.id} code={campaign.code} status={campaign.status ?? "draft"} conflicts={conflictList} />
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/campaigns/${campaign.id}/edit`} className={buttonClass("secondary")}>
+              <Pencil className="size-4" aria-hidden /> Edit
+            </Link>
+            <LifecycleActions id={campaign.id} code={campaign.code} status={campaign.status ?? "draft"} conflicts={conflictList} />
+          </div>
         ) : null}
       </div>
 

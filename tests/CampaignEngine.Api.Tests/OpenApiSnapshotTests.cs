@@ -28,7 +28,25 @@ public sealed class OpenApiSnapshotTests(ApiFactory factory) : IClassFixture<Api
         Assert.True(File.Exists(path), $"{path} is missing. Run: UPDATE_OPENAPI=1 dotnet test --filter OpenApiSnapshot");
         var snapshot = Normalize(await File.ReadAllTextAsync(path));
         Assert.True(snapshot == current,
-            "web/openapi.json is out of date. Run: UPDATE_OPENAPI=1 dotnet test --filter OpenApiSnapshot, then `pnpm gen:api` in web/.");
+            "web/openapi.json is out of date. Run: UPDATE_OPENAPI=1 dotnet test --filter OpenApiSnapshot, then `pnpm gen:api` in web/. " +
+            FirstDifference(snapshot, current));
+    }
+
+    private static string FirstDifference(string expected, string actual)
+    {
+        var a = expected.Split('\n');
+        var b = actual.Split('\n');
+        for (var i = 0; i < Math.Max(a.Length, b.Length); i++)
+        {
+            var left = i < a.Length ? a[i] : "<end>";
+            var right = i < b.Length ? b[i] : "<end>";
+            if (left != right)
+            {
+                return $"First difference at line {i + 1}: snapshot `{left.Trim()}` vs api `{right.Trim()}`.";
+            }
+        }
+
+        return "";
     }
 
     /// <summary>Drops the server list (it contains the test host URL) and fixes formatting and line endings.</summary>

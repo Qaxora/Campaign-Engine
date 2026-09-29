@@ -36,6 +36,11 @@ public static class LedgerEndpoints
             .WithSummary("Redemptions, discount and limit / budget consumption per campaign")
             .Produces<IReadOnlyList<CampaignUsage>>();
 
+        group.MapGet("/usage/campaigns/{campaignId:guid}", async Task<IResult> (Guid campaignId, LedgerService service, CancellationToken ct) =>
+                await service.CampaignUsageAsync(campaignId, ct) is { } usage ? Results.Ok(usage) : Results.NotFound())
+            .WithSummary("Usage of one campaign")
+            .Produces<CampaignUsage>();
+
         group.MapGet("/usage/customers/{customerId}", async (string customerId, LedgerService service, CancellationToken ct) =>
                 await service.CustomerUsageAsync(customerId, ct))
             .WithSummary("What one customer has redeemed, per campaign")

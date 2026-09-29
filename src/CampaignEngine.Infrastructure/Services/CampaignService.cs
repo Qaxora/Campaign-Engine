@@ -12,8 +12,22 @@ public sealed record CampaignQuery(
     string? Channel = null,
     string? Search = null,
     string? Tag = null,
+    DateTimeOffset? ActiveFrom = null,
+    DateTimeOffset? ActiveTo = null,
+    CampaignSort Sort = CampaignSort.Updated,
+    bool Descending = true,
     int Page = 1,
     int PageSize = 50);
+
+public enum CampaignSort
+{
+    Updated,
+    Priority,
+    Name,
+    Code,
+    StartsAt,
+    EndsAt,
+}
 
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount);
 
@@ -45,16 +59,53 @@ public sealed class CampaignService(
             q = q.Where(c => c.Code.ToUpper().Contains(term) || c.Name.ToUpper().Contains(term));
         }
 
-        // Channel and tag live inside the JSON definition, so they are filtered after loading.
-        var records = await q.OrderByDescending(c => c.UpdatedAt).ThenBy(c => c.Code).ToListAsync(cancellationToken);
-        var campaigns = records.Select(r => r.ToDomain())
-            .Where(c => query.Channel is null || c.Channels.Count == 0 || c.Channels.Contains(query.Channel, StringComparer.OrdinalIgnoreCase))
-            .Where(c => query.Tag is null || c.Tags.Contains(query.Tag, StringComparer.OrdinalIgnoreCase))
+        // A campaign runs in [from, to) when its schedule window overlaps it (open ends overlap everything).
+        if (query.ActiveTo is { } activeTo)
+        {
+            var toUtc = activeTo.UtcDateTime;
+            q = q.Where(c => c.StartsAt == null || c.StartsAt < toUtc);
+        }
+
+        if (query.ActiveFrom is { } activeFrom)
+        {
+            var fromUtc = activeFrom.UtcDateTime;
+            q = q.Where(c => c.EndsAt == null || c.EndsAt > fromUtc);
+        }
+
+        // Channel and tag live inside the JSON definition, so they are filtered — and the page sorted — after loading.
+        var records = await q.ToListAsync(cancellationToken);
+        var campaigns = Sort(
+                records.Select(r => r.ToDomain())
+                    .Where(c => query.Channel is null || c.Channels.Count == 0 || c.Channels.Contains(query.Channel, StringComparer.OrdinalIgnoreCase))
+                    .Where(c => query.Tag is null || c.Tags.Contains(query.Tag, StringComparer.OrdinalIgnoreCase)),
+                query.Sort,
+                query.Descending)
             .ToList();
 
         var page = Math.Max(1, query.Page);
         var size = Math.Clamp(query.PageSize, 1, 500);
         return new PagedResult<Campaign>(campaigns.Skip((page - 1) * size).Take(size).ToList(), page, size, campaigns.Count);
+    }
+
+    /// <summary>Sorts by the chosen key; campaigns without a date sort last either way; code breaks ties.</summary>
+    private static IEnumerable<Campaign> Sort(IEnumerable<Campaign> campaigns, CampaignSort sort, bool descending)
+    {
+        var ordered = sort switch
+        {
+            CampaignSort.Priority => descending ? campaigns.OrderByDescending(c => c.Priority) : campaigns.OrderBy(c => c.Priority),
+            CampaignSort.Name => descending ? campaigns.OrderByDescending(c => c.Name, StringComparer.OrdinalIgnoreCase) : campaigns.OrderBy(c => c.Name, StringComparer.OrdinalIgnoreCase),
+            CampaignSort.Code => descending ? campaigns.OrderByDescending(c => c.Code, StringComparer.OrdinalIgnoreCase) : campaigns.OrderBy(c => c.Code, StringComparer.OrdinalIgnoreCase),
+            CampaignSort.StartsAt => ByDate(campaigns, c => c.Schedule.StartsAt, descending),
+            CampaignSort.EndsAt => ByDate(campaigns, c => c.Schedule.EndsAt, descending),
+            _ => descending ? campaigns.OrderByDescending(c => c.UpdatedAt) : campaigns.OrderBy(c => c.UpdatedAt),
+        };
+        return ordered.ThenBy(c => c.Code, StringComparer.Ordinal);
+
+        static IOrderedEnumerable<Campaign> ByDate(IEnumerable<Campaign> source, Func<Campaign, DateTimeOffset?> key, bool desc)
+        {
+            var withDate = source.OrderBy(c => key(c) is null ? 1 : 0);
+            return desc ? withDate.ThenByDescending(key) : withDate.ThenBy(key);
+        }
     }
 
     /// <summary>Finds a campaign by id or by code.</summary>

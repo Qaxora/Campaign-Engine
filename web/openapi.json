@@ -114,7 +114,7 @@
           "Campaigns"
         ],
         "summary": "List campaigns",
-        "description": "Filters by status, channel (campaigns without channels match every channel), tag and a free-text search on code and name.",
+        "description": "Filters by status, channel (campaigns without channels match every channel), tag, a free-text search on code and name, and \u0060activeFrom\u0060 / \u0060activeTo\u0060: campaigns whose schedule window overlaps that range. \u0060sort\u0060 = updated (default), priority, name, code, startsAt, endsAt; \u0060order\u0060 = desc (default) or asc.",
         "parameters": [
           {
             "name": "status",
@@ -139,6 +139,36 @@
           },
           {
             "name": "tag",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activeFrom",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "activeTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
             "in": "query",
             "schema": {
               "type": "string"
@@ -204,6 +234,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/{idOrCode}/description": {
+      "get": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "The campaign in plain English, section by section",
+        "parameters": [
+          {
+            "name": "idOrCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDescription"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/campaigns/describe": {
+      "post": {
+        "tags": [
+          "Campaigns"
+        ],
+        "summary": "Describe an unsaved definition in plain English",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Campaign"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDescription"
                 }
               }
             }
@@ -2120,6 +2210,37 @@
         }
       }
     },
+    "/api/v1/ledger/usage/campaigns/{campaignId}": {
+      "get": {
+        "tags": [
+          "Ledger"
+        ],
+        "summary": "Usage of one campaign",
+        "parameters": [
+          {
+            "name": "campaignId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignUsage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ledger/usage/customers/{customerId}": {
       "get": {
         "tags": [
@@ -2887,6 +3008,61 @@
             "format": "double"
           }
         }
+      },
+      "CampaignDescription": {
+        "required": [
+          "summary",
+          "reward",
+          "conditions",
+          "products",
+          "audience",
+          "schedule",
+          "limits",
+          "combination"
+        ],
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string"
+          },
+          "reward": {
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "limits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "combination": {
+            "type": "string"
+          }
+        },
+        "description": "A campaign definition in plain English, section by section."
       },
       "CampaignHint": {
         "required": [

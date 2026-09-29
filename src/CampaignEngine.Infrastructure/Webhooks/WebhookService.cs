@@ -1,3 +1,4 @@
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Persistence;
 using CampaignEngine.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ public sealed record CreatedWebhookSubscription(Guid Id, string Url, IReadOnlyLi
 public sealed record WebhookDelivery(
     Guid Id, string EventType, DateTimeOffset CreatedAt, int Attempts, DateTimeOffset? DeliveredAt, bool Failed, string? LastError);
 
-public sealed class WebhookService(CampaignDbContext db, OutboxChangeNotifier outbox, TimeProvider time)
+public sealed class WebhookService(CampaignDbContext db, OutboxChangeNotifier outbox, AuditLog audit, TimeProvider time)
 {
     public async Task<IReadOnlyList<WebhookSubscription>> ListAsync(CancellationToken cancellationToken = default) =>
         (await db.WebhookSubscriptions.AsNoTracking().OrderBy(s => s.CreatedAt).ToListAsync(cancellationToken))
@@ -52,6 +53,7 @@ public sealed class WebhookService(CampaignDbContext db, OutboxChangeNotifier ou
             CreatedAt = time.GetUtcNow().UtcDateTime,
         };
         db.WebhookSubscriptions.Add(record);
+        audit.Stage("webhook.created", AuditEntities.Webhook, record.Id.ToString(), record.Url, $"Webhook to {record.Url} created for {record.Events}.");
         await db.SaveChangesAsync(cancellationToken);
         return new CreatedWebhookSubscription(record.Id, record.Url, eventList, record.Description, record.Secret);
     }
@@ -61,6 +63,7 @@ public sealed class WebhookService(CampaignDbContext db, OutboxChangeNotifier ou
         var record = await db.WebhookSubscriptions.FirstOrDefaultAsync(s => s.Id == id, cancellationToken)
                      ?? throw new NotFoundException($"Webhook subscription '{id}' was not found.");
         db.WebhookSubscriptions.Remove(record);
+        audit.Stage("webhook.deleted", AuditEntities.Webhook, record.Id.ToString(), record.Url, $"Webhook to {record.Url} deleted.");
         await db.SaveChangesAsync(cancellationToken);
     }
 

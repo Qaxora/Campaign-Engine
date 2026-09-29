@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Platform;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
@@ -158,10 +159,16 @@ public static class AuthenticationSetup
         return services;
     }
 
-    /// <summary>Sets the scoped <see cref="TenantContext"/> from the authenticated caller (ADR 0005).</summary>
+    /// <summary>Sets the scoped <see cref="TenantContext"/> (ADR 0005) and the audit actor from the authenticated caller.</summary>
     public static IApplicationBuilder UseTenantContext(this IApplicationBuilder app) =>
         app.Use(async (context, next) =>
         {
+            if (context.User.FindFirstValue(PlatformClaims.ActorType) is { } actorType)
+            {
+                context.RequestServices.GetRequiredService<ActorContext>()
+                    .Set(actorType, context.User.FindFirstValue(PlatformClaims.ActorId), context.User.FindFirstValue(ClaimTypes.Email) ?? context.User.ClientName());
+            }
+
             if (Guid.TryParse(context.User.FindFirstValue(PlatformClaims.TenantId), out var tenantId))
             {
                 context.RequestServices.GetRequiredService<TenantContext>().Set(tenantId);

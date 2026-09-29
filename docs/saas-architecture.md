@@ -94,3 +94,12 @@ the plan exists so that limits and a billing provider can be added without chang
 * Integration clients call the API directly on a public hostname (e.g. `api.campaign.qaxora.com`).
 * PostgreSQL; one database, all tenants.
 * Ollama (or another provider) reachable from the API only.
+
+## Audit log
+
+Every configuration change is recorded in `audit_entries` in the same database transaction as the
+change itself: campaign lifecycle and product lists (through the `IChangeNotifier` that also feeds the
+webhook outbox), stores, API keys (never their secrets), webhooks, members and organization settings.
+Each entry names the actor (user email or API key name), the action (`campaign.activated`), the entity
+and a one-line summary. `GET /api/v1/audit` lists them per organization with entity / action / actor
+filters; redemptions are not audited here because the ledger already records them.

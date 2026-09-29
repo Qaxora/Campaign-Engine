@@ -2,6 +2,7 @@ using CampaignEngine.Core.Conflicts;
 using CampaignEngine.Core.Evaluation;
 using CampaignEngine.Infrastructure.Persistence;
 using CampaignEngine.Infrastructure.Analytics;
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Catalog;
 using CampaignEngine.Infrastructure.Ledger;
 using CampaignEngine.Infrastructure.Platform;
@@ -53,6 +54,8 @@ public static class DependencyInjection
         services.AddScoped<ProductService>();
         services.AddScoped<LedgerService>();
         services.AddScoped<AnalyticsService>();
+        services.AddScoped<ActorContext>();
+        services.AddScoped<AuditLog>();
         services.Configure<AccountOptions>(configuration.GetSection("Accounts"));
         services.Configure<SeedOptions>(configuration.GetSection("Seed"));
         services.AddSingleton(sp =>
@@ -70,7 +73,7 @@ public static class DependencyInjection
 
         services.Configure<WebhookOptions>(configuration.GetSection("Webhooks"));
         services.AddScoped<OutboxChangeNotifier>();
-        services.AddScoped<IChangeNotifier>(sp => sp.GetRequiredService<OutboxChangeNotifier>());
+        services.AddScoped<IChangeNotifier>(sp => new AuditingChangeNotifier(sp.GetRequiredService<OutboxChangeNotifier>(), sp.GetRequiredService<AuditLog>()));
         services.AddScoped<WebhookService>();
         services.AddHttpClient(WebhookDispatcher.HttpClientName);
         services.AddSingleton<WebhookDispatcher>();

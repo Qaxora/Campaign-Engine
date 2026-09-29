@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using CampaignEngine.Core.Campaigns;
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Persistence;
 using CampaignEngine.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,7 @@ public sealed record Store(Guid Id, string Code, string Name, string? Channel, s
 
 public sealed record StoreInput(string Code, string Name, string? Channel, string? City, bool Active = true);
 
-public sealed partial class StoreService(CampaignDbContext db, TimeProvider time)
+public sealed partial class StoreService(CampaignDbContext db, AuditLog audit, TimeProvider time)
 {
     [GeneratedRegex("^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$")]
     private static partial Regex CodePattern();
@@ -70,6 +71,7 @@ public sealed partial class StoreService(CampaignDbContext db, TimeProvider time
             UpdatedAt = now,
         };
         db.Stores.Add(record);
+        audit.Stage("store.created", AuditEntities.Store, record.Code, record.Name, $"Store {record.Code} ({record.Name}) registered.");
         await SaveAsync(cancellationToken);
         return ToModel(record);
     }
@@ -84,6 +86,7 @@ public sealed partial class StoreService(CampaignDbContext db, TimeProvider time
         record.Channel = Blank(input.Channel);
         record.City = Blank(input.City);
         record.Active = input.Active;
+        audit.Stage("store.updated", AuditEntities.Store, record.Code, record.Name, $"Store {record.Code} updated; {(record.Active ? "active" : "inactive")}.");
         record.UpdatedAt = time.GetUtcNow().UtcDateTime;
         await SaveAsync(cancellationToken);
         return ToModel(record);
@@ -94,6 +97,7 @@ public sealed partial class StoreService(CampaignDbContext db, TimeProvider time
         var record = await FindAsync(code, tracking: true, cancellationToken)
                      ?? throw new NotFoundException($"Store '{code}' was not found.");
         db.Stores.Remove(record);
+        audit.Stage("store.deleted", AuditEntities.Store, record.Code, record.Name, $"Store {record.Code} ({record.Name}) deleted.");
         await SaveAsync(cancellationToken);
     }
 

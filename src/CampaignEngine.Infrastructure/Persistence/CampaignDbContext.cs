@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Catalog;
 using CampaignEngine.Infrastructure.Platform;
 using CampaignEngine.Infrastructure.Webhooks;
@@ -28,6 +29,8 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
     public DbSet<ProductRecord> Products => Set<ProductRecord>();
 
     public DbSet<ProductCategoryRecord> ProductCategories => Set<ProductCategoryRecord>();
+
+    public DbSet<AuditEntryRecord> AuditEntries => Set<AuditEntryRecord>();
 
     public DbSet<CampaignRecord> Campaigns => Set<CampaignRecord>();
 
@@ -139,6 +142,22 @@ public sealed class CampaignDbContext(DbContextOptions<CampaignDbContext> option
             e.Property(x => x.TokenHash).HasMaxLength(64);
             e.HasIndex(x => x.TokenHash).IsUnique();
             e.HasOne<UserRecord>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AuditEntryRecord>(e =>
+        {
+            e.ToTable("audit_entries");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ActorType).HasMaxLength(16);
+            e.Property(x => x.ActorId).HasMaxLength(64);
+            e.Property(x => x.ActorName).HasMaxLength(256);
+            e.Property(x => x.Action).HasMaxLength(64);
+            e.Property(x => x.EntityType).HasMaxLength(32);
+            e.Property(x => x.EntityId).HasMaxLength(128);
+            e.Property(x => x.EntityName).HasMaxLength(256);
+            e.Property(x => x.Summary).HasMaxLength(1024);
+            e.HasIndex(x => new { x.TenantId, x.CreatedAt });
+            e.HasIndex(x => new { x.TenantId, x.EntityType, x.EntityId });
         });
 
         modelBuilder.Entity<ProductRecord>(e =>

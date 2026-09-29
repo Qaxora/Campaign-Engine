@@ -1,3 +1,4 @@
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Persistence;
 using CampaignEngine.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace CampaignEngine.Infrastructure.Platform;
 public sealed record Member(Guid UserId, string Email, string Name, MemberRole Role, DateTimeOffset JoinedAt);
 
 /// <summary>Members of the current organization. Every query is tenant-filtered by the DbContext.</summary>
-public sealed class MemberService(CampaignDbContext db, TimeProvider time)
+public sealed class MemberService(CampaignDbContext db, AuditLog audit, TimeProvider time)
 {
     public async Task<IReadOnlyList<Member>> ListAsync(CancellationToken cancellationToken = default) =>
         await db.Memberships.AsNoTracking()
@@ -30,6 +31,7 @@ public sealed class MemberService(CampaignDbContext db, TimeProvider time)
 
         var membership = new MembershipRecord { Id = Guid.NewGuid(), UserId = user.Id, Role = role, CreatedAt = time.GetUtcNow().UtcDateTime };
         db.Memberships.Add(membership);
+        audit.Stage("member.added", AuditEntities.Member, user.Id.ToString(), user.Email, $"{user.Email} added as {role.ToString().ToLowerInvariant()}.");
         await db.SaveChangesAsync(cancellationToken);
         return new Member(user.Id, user.Email, user.Name, role, new DateTimeOffset(membership.CreatedAt, TimeSpan.Zero));
     }
@@ -44,6 +46,7 @@ public sealed class MemberService(CampaignDbContext db, TimeProvider time)
             await EnsureAnotherOwnerAsync(userId, cancellationToken);
         }
 
+        audit.Stage("member.roleChanged", AuditEntities.Member, userId.ToString(), null, $"Role changed from {membership.Role.ToString().ToLowerInvariant()} to {role.ToString().ToLowerInvariant()}.");
         membership.Role = role;
         await db.SaveChangesAsync(cancellationToken);
         var user = await db.Users.AsNoTracking().FirstAsync(u => u.Id == userId, cancellationToken);
@@ -60,6 +63,7 @@ public sealed class MemberService(CampaignDbContext db, TimeProvider time)
         }
 
         db.Memberships.Remove(membership);
+        audit.Stage("member.removed", AuditEntities.Member, userId.ToString(), null, $"Member with role {membership.Role.ToString().ToLowerInvariant()} removed.");
         await db.SaveChangesAsync(cancellationToken);
     }
 

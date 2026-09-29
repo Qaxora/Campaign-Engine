@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Persistence;
 using CampaignEngine.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,7 @@ public sealed record CreatedApiKey(Guid Id, string Name, string Prefix, IReadOnl
 /// <summary>The identity behind a presented key.</summary>
 public sealed record ApiKeyIdentity(Guid KeyId, Guid TenantId, string Name, IReadOnlyList<string> Scopes);
 
-public sealed class ApiKeyService(CampaignDbContext db, ITenantContext tenant, TimeProvider time)
+public sealed class ApiKeyService(CampaignDbContext db, ITenantContext tenant, AuditLog audit, TimeProvider time)
 {
     private const string KeyPrefix = "qxc_";
 
@@ -98,6 +99,7 @@ public sealed class ApiKeyService(CampaignDbContext db, ITenantContext tenant, T
             CreatedAt = time.GetUtcNow().UtcDateTime,
         };
         db.ApiKeys.Add(record);
+        audit.Stage("apiKey.created", AuditEntities.ApiKey, record.Id.ToString(), record.Name, $"API key {record.Name} ({record.Prefix}…) created with scopes {record.Scopes}.");
         await db.SaveChangesAsync(cancellationToken);
         return new CreatedApiKey(record.Id, record.Name, record.Prefix, normalized, key);
     }
@@ -106,7 +108,12 @@ public sealed class ApiKeyService(CampaignDbContext db, ITenantContext tenant, T
     {
         var record = await db.ApiKeys.FirstOrDefaultAsync(k => k.Id == id, cancellationToken)
                      ?? throw new NotFoundException($"API key '{id}' was not found.");
-        record.RevokedAt ??= time.GetUtcNow().UtcDateTime;
+        if (record.RevokedAt is null)
+        {
+            record.RevokedAt = time.GetUtcNow().UtcDateTime;
+            audit.Stage("apiKey.revoked", AuditEntities.ApiKey, record.Id.ToString(), record.Name, $"API key {record.Name} ({record.Prefix}…) revoked.");
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return ToModel(record);
     }

@@ -1,4 +1,5 @@
 using System.Text;
+using CampaignEngine.Infrastructure.Audit;
 using CampaignEngine.Infrastructure.Persistence;
 using CampaignEngine.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ namespace CampaignEngine.Infrastructure.Platform;
 
 public sealed record Organization(Guid Id, string Name, string Slug, Plan Plan, DateTimeOffset CreatedAt);
 
-public sealed class OrganizationService(CampaignDbContext db, TimeProvider time)
+public sealed class OrganizationService(CampaignDbContext db, AuditLog audit, TimeProvider time)
 {
     public async Task<Organization?> GetAsync(Guid id, CancellationToken cancellationToken = default) =>
         ToModel(await db.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id, cancellationToken));
@@ -59,6 +60,7 @@ public sealed class OrganizationService(CampaignDbContext db, TimeProvider time)
 
         var record = await db.Organizations.FirstOrDefaultAsync(o => o.Id == id, cancellationToken)
                      ?? throw new NotFoundException("Organization was not found.");
+        audit.Stage("organization.renamed", AuditEntities.Organization, record.Id.ToString(), name.Trim(), $"Organization renamed from '{record.Name}' to '{name.Trim()}'.");
         record.Name = name.Trim();
         await db.SaveChangesAsync(cancellationToken);
         return ToModel(record)!;

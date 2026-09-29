@@ -109,3 +109,16 @@ their checkout customization layer, or receive campaigns as fixed prices exporte
   redemption limits are safe across instances (optimistic concurrency on usage counters).
 * Put the API behind TLS; the API key travels in a header.
 * Webhook URLs are configured by admins only; the dispatcher will call whatever URL is registered.
+
+## 8. Analytics
+
+`/api/v1/analytics/*` computes KPIs straight from campaigns and the ledger (no separate event
+pipeline). Periods are half-open `[from, to)`, default the last 30 days, at most 366 days; reversed
+transactions are excluded and offline sales count at their sale time.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /analytics/overview` | total / active / draft campaigns; transactions, redemptions, discount, average discount and redeemed campaigns for the period and the previous period of equal length |
+| `GET /analytics/campaigns` | per campaign: redemptions, discount, average, share of the period's discount, lifetime budget usage |
+| `GET /analytics/top-campaigns?limit=5` | the same, best first, limited |
+| `GET /analytics/trends?timeZone=Europe/Istanbul` | one point per day (empty days included), cut in the given time zone |

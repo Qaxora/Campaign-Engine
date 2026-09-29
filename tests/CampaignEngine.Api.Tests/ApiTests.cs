@@ -112,8 +112,15 @@ public sealed class ApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var results = await Task.WhenAll(Enumerable.Range(0, 20).Select(async i =>
         {
-            var response = await factory.Pos().PostRawAsync("/api/v1/redemptions", $$"""{ "transactionId": "RACE-{{i}}", "cart": {{Cart("race", quantity: 1)}} }""");
-            return await response.ReadAsync<RedemptionResult>();
+            // 409 means "lost the race too often, retry" — the documented client behaviour (the call is idempotent).
+            for (var attempt = 1; ; attempt++)
+            {
+                var response = await factory.Pos().PostRawAsync("/api/v1/redemptions", $$"""{ "transactionId": "RACE-{{i}}", "cart": {{Cart("race", quantity: 1)}} }""");
+                if (response.StatusCode != HttpStatusCode.Conflict || attempt == 5)
+                {
+                    return await response.ReadAsync<RedemptionResult>();
+                }
+            }
         }));
 
         Assert.Equal(5, results.Count(r => r.TotalDiscount > 0));

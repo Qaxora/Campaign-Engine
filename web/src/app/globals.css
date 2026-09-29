@@ -18,6 +18,9 @@
   --danger: #c2261d;
   --danger-soft: #fdecea;
   --ring: #2f5bea55;
+  /* Chart series colour, validated with the dataviz palette checks against --surface. */
+  --chart-1: #2f5bea;
+  --chart-grid: #e9ecf0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +41,8 @@
     --danger: #f87171;
     --danger-soft: #2d1616;
     --ring: #6d8ff566;
+    --chart-1: #6389f3;
+    --chart-grid: #232a35;
   }
 }
 
@@ -58,6 +63,8 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-grid: var(--chart-grid);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }

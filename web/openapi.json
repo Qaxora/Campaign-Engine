@@ -2199,6 +2199,97 @@
         }
       }
     },
+    "/api/v1/ledger/redemptions": {
+      "get": {
+        "tags": [
+          "Ledger"
+        ],
+        "summary": "Every campaign discount given, one row per campaign per sale, newest first",
+        "description": "Filter by sale date (\u0060from\u0060 inclusive, \u0060to\u0060 exclusive), status, campaign code, coupon code or customer.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "campaign",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "coupon",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfRedemptionRow"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/ledger/usage/campaigns": {
       "get": {
         "tags": [
@@ -5077,6 +5168,47 @@
           }
         }
       },
+      "PagedResultOfRedemptionRow": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RedemptionRow"
+            }
+          },
+          "page": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "pageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "PaymentInfo": {
         "type": "object",
         "properties": {
@@ -5501,6 +5633,84 @@
                 "$ref": "#/components/schemas/EvaluationResult"
               }
             ]
+          }
+        }
+      },
+      "RedemptionRow": {
+        "required": [
+          "transactionId",
+          "campaignId",
+          "campaignCode",
+          "campaignName",
+          "couponCode",
+          "customerId",
+          "channel",
+          "storeId",
+          "currency",
+          "offline",
+          "discount",
+          "status",
+          "soldAt"
+        ],
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string"
+          },
+          "campaignId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "campaignCode": {
+            "type": "string"
+          },
+          "campaignName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "couponCode": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "customerId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "channel": {
+            "type": "string"
+          },
+          "storeId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "currency": {
+            "type": "string"
+          },
+          "offline": {
+            "type": "boolean"
+          },
+          "discount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d\u002B)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RedemptionStatus"
+          },
+          "soldAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

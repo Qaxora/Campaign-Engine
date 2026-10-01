@@ -100,6 +100,35 @@ public sealed class LedgerTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Redemptions_are_listed_per_campaign_with_sale_context()
+    {
+        await ActiveCampaignAsync("LEDGER-E", "ledger-e");
+        await ActiveCampaignAsync("LEDGER-F", "ledger-f");
+        const string twoCampaigns = """
+            { "channel": "web", "storeId": "WEB", "customer": { "id": "CUST-E" },
+              "lines": [ { "lineId": "1", "sku": "E-1", "quantity": 1, "unitPrice": 100, "categories": ["ledger-e", "ledger-f"] } ] }
+            """;
+        await RedeemAsync("LE-1", twoCampaigns);
+        await RedeemAsync("LE-2", Cart("ledger-e", "CUST-E"));
+        await factory.Pos().PostAsync("/api/v1/redemptions/LE-2/reverse", null);
+
+        var admin = factory.Admin();
+        var e = await (await admin.GetAsync("/api/v1/ledger/redemptions?campaign=ledger-e")).ReadAsync<PagedResult<RedemptionRow>>();
+        Assert.Equal(["LE-2", "LE-1"], e.Items.Select(r => r.TransactionId));
+        Assert.Equal("LEDGER-E name", e.Items[0].CampaignName);
+        Assert.Equal(RedemptionStatus.Reversed, e.Items[0].Status);
+        Assert.Equal("web", e.Items[1].Channel);
+        Assert.Equal("WEB", e.Items[1].StoreId);
+
+        var confirmed = await (await admin.GetAsync("/api/v1/ledger/redemptions?customerId=CUST-E&status=confirmed")).ReadAsync<PagedResult<RedemptionRow>>();
+        Assert.Equal(["LEDGER-E", "LEDGER-F"], confirmed.Items.Select(r => r.CampaignCode).Order());
+        Assert.All(confirmed.Items, r => Assert.Equal("LE-1", r.TransactionId));
+
+        var other = await (await factory.OtherTenant().GetAsync("/api/v1/ledger/redemptions?customerId=CUST-E")).ReadAsync<PagedResult<RedemptionRow>>();
+        Assert.Equal(0, other.TotalCount);
+    }
+
+    [Fact]
     public async Task Ledger_is_tenant_scoped_and_needs_read_access()
     {
         await ActiveCampaignAsync("LEDGER-D", "ledger-d");

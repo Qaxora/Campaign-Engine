@@ -31,6 +31,15 @@ public static class LedgerEndpoints
             .WithSummary("A transaction with the discount of every campaign it used")
             .Produces<LedgerTransactionDetail>();
 
+        group.MapGet("/redemptions", async (
+                    DateTimeOffset? from, DateTimeOffset? to, string? status, string? campaign, string? coupon, string? customerId,
+                    int? page, int? pageSize, LedgerService service, CancellationToken ct) =>
+                await service.ListRedemptionsAsync(
+                    new RedemptionQuery(from, to, QueryEnum.Parse<RedemptionStatus>(status, "status"), campaign, coupon, customerId, page ?? 1, pageSize ?? 50), ct))
+            .WithSummary("Every campaign discount given, one row per campaign per sale, newest first")
+            .WithDescription("Filter by sale date (`from` inclusive, `to` exclusive), status, campaign code, coupon code or customer.")
+            .Produces<PagedResult<RedemptionRow>>();
+
         group.MapGet("/usage/campaigns", async (string? status, LedgerService service, CancellationToken ct) =>
                 await service.CampaignUsageAsync(QueryEnum.Parse<CampaignStatus>(status, "status"), ct))
             .WithSummary("Redemptions, discount and limit / budget consumption per campaign")

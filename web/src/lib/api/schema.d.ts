@@ -2318,6 +2318,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ledger/redemptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every campaign discount given, one row per campaign per sale, newest first
+         * @description Filter by sale date (`from` inclusive, `to` exclusive), status, campaign code, coupon code or customer.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    from?: string;
+                    to?: string;
+                    status?: string;
+                    campaign?: string;
+                    coupon?: string;
+                    customerId?: string;
+                    page?: number | string;
+                    pageSize?: number | string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedResultOfRedemptionRow"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ledger/usage/campaigns": {
         parameters: {
             query?: never;
@@ -3304,6 +3352,15 @@ export interface components {
             /** Format: int32 */
             totalCount: number | string;
         };
+        PagedResultOfRedemptionRow: {
+            items: components["schemas"]["RedemptionRow"][];
+            /** Format: int32 */
+            page: number | string;
+            /** Format: int32 */
+            pageSize: number | string;
+            /** Format: int32 */
+            totalCount: number | string;
+        };
         PaymentInfo: {
             /** @description e.g. `creditCard`, `cash`, `wallet`, `giftCard`. */
             method?: null | string;
@@ -3419,6 +3476,24 @@ export interface components {
             totalDiscount?: number | string;
             campaigns?: components["schemas"]["RedeemedCampaign"][];
             evaluation?: null | components["schemas"]["EvaluationResult"];
+        };
+        RedemptionRow: {
+            transactionId: string;
+            /** Format: uuid */
+            campaignId: string;
+            campaignCode: string;
+            campaignName: null | string;
+            couponCode: null | string;
+            customerId: null | string;
+            channel: string;
+            storeId: null | string;
+            currency: string;
+            offline: boolean;
+            /** Format: double */
+            discount: number | string;
+            status: components["schemas"]["RedemptionStatus"];
+            /** Format: date-time */
+            soldAt: string;
         };
         /** @enum {unknown} */
         RedemptionStatus: "confirmed" | "reversed";
